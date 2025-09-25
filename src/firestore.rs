@@ -12,13 +12,13 @@ pub async fn connect() -> FirestoreResult<FirestoreDb> {
     .await
 }
 
-pub async fn load_checkpoints(
+pub async fn find_checkpoints(
     db: &FirestoreDb,
     day: &NaiveDate,
 ) -> FirestoreResult<Vec<Checkpoint>> {
     // Calculate start and end of today in UTC
-    let start_of_today = day.and_hms_opt(0, 0, 0).unwrap();
-    let end_of_today = day.and_hms_opt(23, 59, 59).unwrap();
+    let start_of_day = day.and_hms_opt(0, 0, 0).unwrap();
+    let end_of_day = day.and_hms_opt(23, 59, 59).unwrap();
 
     let stream = db
         .fluent()
@@ -27,9 +27,9 @@ pub async fn load_checkpoints(
         .filter(|q| {
             q.for_all([
                 q.field(path!(Checkpoint::time))
-                    .greater_than_or_equal(start_of_today),
+                    .greater_than_or_equal(start_of_day),
                 q.field(path!(Checkpoint::time))
-                    .less_than_or_equal(end_of_today),
+                    .less_than_or_equal(end_of_day),
             ])
         })
         .order_by([(path!(Checkpoint::time), FirestoreQueryDirection::Ascending)])
@@ -75,7 +75,7 @@ pub async fn delete_checkpoint(db: &FirestoreDb, ch: &Checkpoint) -> FirestoreRe
         .await
 }
 
-pub async fn get_distinct_dates(db: &FirestoreDb) -> FirestoreResult<Vec<chrono::NaiveDate>> {
+pub async fn find_distinct_dates(db: &FirestoreDb) -> FirestoreResult<Vec<chrono::NaiveDate>> {
     let stream = db
         .fluent()
         .select()

@@ -130,10 +130,10 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         let [weeks_area, _, timeline_area, _, fill_area, input_area, controls_area] =
             Layout::vertical(vec![
-                Constraint::Length(1),     // days
-                Constraint::Length(1),     // spacer
-                Constraint::Length(3 * 5), // timeline
-                Constraint::Length(1),     // spacer
+                Constraint::Length(1),         // days
+                Constraint::Length(1),         // spacer
+                Constraint::Length(3 * 5 + 4), // timeline
+                Constraint::Length(1),         // spacer
                 Constraint::Fill(1),
                 Constraint::Length(3), // input
                 Constraint::Length(1), // controls
@@ -146,9 +146,7 @@ impl App {
             controls_area,
         );
 
-        let days_constraints = vec![Constraint::Length(5); self.mondays.len()];
-
-        let days_layout = Layout::horizontal(days_constraints)
+        let days_layout = Layout::horizontal(vec![Constraint::Length(5); self.mondays.len()])
             .spacing(1)
             .split(weeks_area);
 
@@ -167,7 +165,7 @@ impl App {
 
         let [mon_area, tue_area, wed_area, thu_area, fri_area] =
             Layout::vertical(vec![Constraint::Length(3); 5])
-                // .spacing(1)
+                .spacing(1)
                 .areas(timeline_area);
 
         let mon_w = Timeline {
@@ -391,6 +389,7 @@ impl App {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
             if let Some(t) = selected.time.checked_add_signed(TimeDelta::minutes(15)) {
                 selected.time = t;
+
                 if let Err(err) = update_checkpoint(&self.db, selected).await {
                     eprintln!("{}", err);
                 }
@@ -402,6 +401,7 @@ impl App {
         if let Some(next) = self.week.next_checkpoint_mut() {
             if let Some(t) = next.time.checked_add_signed(TimeDelta::minutes(15)) {
                 next.time = t;
+
                 if let Err(err) = update_checkpoint(&self.db, next).await {
                     eprintln!("{}", err);
                 }
@@ -413,6 +413,7 @@ impl App {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
             if let Some(t) = selected.time.checked_add_signed(TimeDelta::minutes(-15)) {
                 selected.time = t;
+
                 if let Err(err) = update_checkpoint(&self.db, selected).await {
                     eprintln!("{}", err);
                 }
@@ -424,6 +425,7 @@ impl App {
         if let Some(next) = self.week.next_checkpoint_mut() {
             if let Some(t) = next.time.checked_add_signed(TimeDelta::minutes(-15)) {
                 next.time = t;
+
                 if let Err(err) = update_checkpoint(&self.db, next).await {
                     eprintln!("{}", err);
                 }
@@ -463,7 +465,6 @@ impl App {
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);
             }
-            self.load_week().await;
         }
     }
 
@@ -504,17 +505,16 @@ impl App {
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);
             }
-            self.load_week().await;
         };
     }
 
     async fn mark_registered(&mut self) {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
             selected.registered = true;
+
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);
             }
-            self.load_week().await;
         };
     }
 

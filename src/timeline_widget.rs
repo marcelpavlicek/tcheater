@@ -1,8 +1,10 @@
 use crate::{
     app::Checkpoint,
+    main,
     projects::Project,
     time::{human_duration, time_spans, UNIT},
 };
+use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
@@ -21,6 +23,25 @@ impl<'a> Widget for Timeline<'a> {
     where
         Self: Sized,
     {
+        let [pre_area, main_area] =
+            Layout::horizontal(vec![Constraint::Length(5), Constraint::Fill(1)])
+                .spacing(1)
+                .areas(area);
+
+        let mut prelude_p = Paragraph::default();
+
+        if let Some(ch) = self.checkpoints.first() {
+            prelude_p = Paragraph::new(vec![
+                Line::from(ch.time.format("%a").to_string()),
+                Line::from(ch.time.format("%d.").to_string()),
+            ])
+            .centered();
+            if self.selected_checkpoint_idx.is_some() {
+                prelude_p = prelude_p.bg(Color::Gray).fg(Color::Black).bold();
+            }
+        }
+        prelude_p.render(pre_area, buf);
+
         let spans = time_spans(self.checkpoints);
 
         let timeline_constraint = spans
@@ -28,7 +49,7 @@ impl<'a> Widget for Timeline<'a> {
             .map(|s| Constraint::Length((s.units * 2) + 2)) // border
             .collect::<Vec<Constraint>>();
 
-        let areas = Layout::horizontal(timeline_constraint).split(area);
+        let areas = Layout::horizontal(timeline_constraint).split(main_area);
 
         for (i, span) in spans.iter().enumerate() {
             let current_ch = &self.checkpoints[i];

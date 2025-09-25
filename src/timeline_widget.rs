@@ -1,10 +1,8 @@
 use crate::{
     app::Checkpoint,
-    main,
     projects::Project,
     time::{human_duration, time_spans, UNIT},
 };
-use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
@@ -64,7 +62,7 @@ impl<'a> Widget for Timeline<'a> {
             }
 
             if !current_ch.registered {
-                title_bottom = title_bottom.bg(Color::Red);
+                title_bottom = title_bottom.bg(Color::Red).fg(Color::White);
             }
 
             if let Some(j) = self.selected_checkpoint_idx {

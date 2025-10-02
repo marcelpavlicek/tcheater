@@ -1,3 +1,4 @@
+use std::env;
 use std::process::exit;
 
 pub use app::App;
@@ -22,7 +23,15 @@ async fn main() {
     };
 
     let projects = projects::Project::from_toml_file("./projects.toml").unwrap();
-    let mondays = get_mondays_in_month(Local::now().month());
+
+    // Get month from command line argument or use current month
+    let month = env::args()
+        .nth(1)
+        .and_then(|arg| arg.parse::<u32>().ok())
+        .filter(|&m| (1..=12).contains(&m))
+        .unwrap_or_else(|| Local::now().month());
+
+    let mondays = get_mondays_in_month(month);
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();

@@ -223,7 +223,6 @@ impl App {
             let next_ch = self.week.next_checkpoint();
 
             let rounded_start = selected_ch.rounded_time();
-            let rounded_end = next_ch.map(|next_ch| next_ch.rounded_time());
 
             let mut lines = vec![Line::from(vec![
                 Span::from(" Started: "),
@@ -233,10 +232,11 @@ impl App {
                 Span::from(")"),
             ])];
 
-            if let Some(rounded_end) = rounded_end {
+            if let Some(next_ch) = next_ch {
+                let rounded_end = next_ch.rounded_time();
                 lines.push(Line::from(vec![
                     Span::from("Finished: "),
-                    Span::from(rounded_start.format("%H:%M").to_string()),
+                    Span::from(next_ch.time.format("%H:%M").to_string()),
                     Span::from(" ("),
                     Span::from(rounded_end.format("%H:%M").to_string()),
                     Span::from(")"),

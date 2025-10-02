@@ -367,11 +367,13 @@ pub fn get_mondays_in_month(month: u32) -> Vec<NaiveDate> {
         return Vec::new();
     }
 
-    let current_year = Local::now().year();
+    let now = Local::now().naive_local().date();
+    let now_year = now.year();
+
     let mut mondays = Vec::new();
 
     // Get the first day of the month
-    let first_day = match NaiveDate::from_ymd_opt(current_year, month, 1) {
+    let first_day = match NaiveDate::from_ymd_opt(now_year, month, 1) {
         Some(date) => date,
         None => return Vec::new(),
     };
@@ -379,19 +381,19 @@ pub fn get_mondays_in_month(month: u32) -> Vec<NaiveDate> {
     // Find the first Monday of the month
     let days_until_monday = match first_day.weekday() {
         Weekday::Mon => 0,
-        Weekday::Tue => 6,
-        Weekday::Wed => 5,
-        Weekday::Thu => 4,
-        Weekday::Fri => 3,
-        Weekday::Sat => 2,
-        Weekday::Sun => 1,
+        Weekday::Tue => -1,
+        Weekday::Wed => -2,
+        Weekday::Thu => -3,
+        Weekday::Fri => -4,
+        Weekday::Sat => -5,
+        Weekday::Sun => -6,
     };
 
     let first_monday = first_day + Duration::days(days_until_monday);
 
     // Collect all Mondays in the month
     let mut current_monday = first_monday;
-    while current_monday.month() == month {
+    while current_monday.month() <= month && current_monday <= now {
         // Convert to DateTime<Local> at midnight
         // if let Some(datetime) = Local
         //     .from_local_datetime(&current_monday.and_hms_opt(0, 0, 0).unwrap())

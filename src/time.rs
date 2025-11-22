@@ -15,6 +15,7 @@ pub struct Week {
     pub wed: Vec<Checkpoint>,
     pub thu: Vec<Checkpoint>,
     pub fri: Vec<Checkpoint>,
+    pub unregistered_checkpoints: Vec<Checkpoint>,
     pub selected_weekday: Weekday,
     pub selected_checkpoint_idx: usize,
 }
@@ -27,6 +28,7 @@ impl Week {
             wed: vec![],
             thu: vec![],
             fri: vec![],
+            unregistered_checkpoints: vec![],
             selected_weekday: Weekday::Mon,
             selected_checkpoint_idx: 0,
         }

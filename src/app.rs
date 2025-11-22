@@ -386,12 +386,29 @@ impl App {
         let wed = self.load_checkpoints(first_mon + Days::new(2)).await;
         let thu = self.load_checkpoints(first_mon + Days::new(3)).await;
         let fri = self.load_checkpoints(first_mon + Days::new(4)).await;
+
+        let mut unregistered_checkpoints = vec![];
+
+        // Iterate through all daily checkpoints and collect unregistered ones
+        for checkpoint in mon
+            .iter()
+            .chain(tue.iter())
+            .chain(wed.iter())
+            .chain(thu.iter())
+            .chain(fri.iter())
+        {
+            if !checkpoint.registered {
+                unregistered_checkpoints.push(checkpoint.clone());
+            }
+        }
+
         self.week = Week {
             mon,
             tue,
             wed,
             thu,
             fri,
+            unregistered_checkpoints,
             selected_weekday: chrono::Weekday::Mon,
             selected_checkpoint_idx: 0,
         };

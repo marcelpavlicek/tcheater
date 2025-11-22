@@ -128,20 +128,57 @@ impl App {
     /// - <https://docs.rs/ratatui/latest/ratatui/widgets/index.html>
     /// - <https://github.com/ratatui/ratatui/tree/master/examples>
     fn draw(&mut self, frame: &mut Frame) {
-        let [weeks_area, _, timeline_area, _, fill_area, input_area, controls_area] =
-            Layout::vertical(vec![
-                Constraint::Length(1),         // days
-                Constraint::Length(1),         // spacer
-                Constraint::Length(3 * 5 + 4), // timeline
-                Constraint::Length(1),         // spacer
-                Constraint::Fill(1),
-                Constraint::Length(3), // input
-                Constraint::Length(1), // controls
-            ])
-            .areas(frame.area());
+        let unregistered_count = self.week.unregistered_checkpoints.len();
+        let unregistered_height = if unregistered_count > 0 {
+            // Add 1 for the bottom border of the block
+            unregistered_count as u16 + 1
+        } else {
+            0
+        };
+
+        let mut constraints = Vec::new();
+        if unregistered_height > 0 {
+            constraints.push(Constraint::Length(unregistered_height));
+        }
+        constraints.extend(vec![
+            Constraint::Length(1),         // days
+            Constraint::Length(1),         // spacer
+            Constraint::Length(3 * 5 + 4), // timeline
+            Constraint::Length(1),         // spacer
+            Constraint::Fill(1),
+            Constraint::Length(3), // input
+            Constraint::Length(1), // controls
+        ]);
+
+        let areas = Layout::vertical(constraints).split(frame.area());
+
+        let mut area_index = 0;
+        if unregistered_height > 0 {
+            let unregistered_area = areas[area_index];
+            let lines: Vec<Line> = self.week.unregistered_checkpoints
+                .iter()
+                .map(|ch| {
+                    Line::from(vec![
+                        Span::from(ch.time.format("%d.%m %H:%M ").to_string()),
+                        Span::from(ch.project.as_deref().unwrap_or("-").to_string()).bold(),
+                        Span::from(" "),
+                        Span::from(ch.message.as_deref().unwrap_or("")),
+                    ])
+                })
+                .collect();
+            let paragraph = Paragraph::new(lines)
+                .block(Block::bordered().title("Unregistered Checkpoints"));
+            frame.render_widget(paragraph, unregistered_area);
+            area_index += 1;
+        }
+
+        let weeks_area = areas[area_index];
+        let timeline_area = areas[area_index + 2];
+        let fill_area = areas[area_index + 4];
+        let input_area = areas[area_index + 5];
+        let controls_area = areas[area_index + 6];
 
         frame.render_widget(
-            // Paragraph::new(help_line()).block(Block::new().padding(Padding::horizontal(1))),
             HelpLine::default(),
             controls_area,
         );

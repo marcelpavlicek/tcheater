@@ -3,6 +3,7 @@ use std::process::exit;
 
 pub use app::App;
 use chrono::{Datelike, Local};
+use directories::UserDirs;
 use time::get_mondays_in_month;
 
 pub mod app;
@@ -22,7 +23,12 @@ async fn main() {
         }
     };
 
-    let projects = projects::Project::from_toml_file("./projects.toml").unwrap();
+    let home_dir = match UserDirs::new() {
+        Some(user_dirs) => user_dirs.home_dir().to_path_buf(),
+        None => exit(1),
+    };
+
+    let projects = projects::Project::from_toml_file(home_dir.join("projects.toml")).unwrap();
 
     // Get month from command line argument or use current month
     let month = env::args()

@@ -16,3 +16,4 @@ tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0.218", features = ["derive"] }
 toml = "0.8.0"
 tui-input = "0.14.0"
+directories = "6.0.0"

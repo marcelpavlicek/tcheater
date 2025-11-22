@@ -7,6 +7,7 @@ pub struct Project {
     pub id: String,
     pub name: String,
     pub color: u8,
+    pub tasks: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

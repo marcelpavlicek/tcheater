@@ -10,6 +10,8 @@ use ratatui::{
     widgets::{Block, Paragraph, Widget},
 };
 
+const FIFTEEN_LEN: u16 = 4;
+
 pub struct Timeline<'a> {
     pub checkpoints: &'a Vec<Checkpoint>,
     pub projects: &'a Vec<Project>,
@@ -44,7 +46,7 @@ impl<'a> Widget for Timeline<'a> {
 
         let timeline_constraint = spans
             .iter()
-            .map(|s| Constraint::Length((s.units * 2) + 2)) // border
+            .map(|s| Constraint::Length(s.units * FIFTEEN_LEN + 2)) // border
             .collect::<Vec<Constraint>>();
 
         let areas = Layout::horizontal(timeline_constraint).split(main_area);
@@ -54,11 +56,11 @@ impl<'a> Widget for Timeline<'a> {
 
             let mut title_top = Line::from(human_duration(span.units as u32 * UNIT)).centered();
             let mut title_bottom = Line::from(current_ch.time.format("%H:%M").to_string());
-            let mut text = "──".to_string().repeat(span.units as usize);
+            let mut text = "─".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
             let timeline_style = Style::new().fg(current_ch.color(self.projects));
 
             if current_ch.project.is_none() {
-                text = "  ".to_string().repeat(span.units as usize);
+                text = " ".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
             }
 
             if !current_ch.registered {
@@ -67,7 +69,7 @@ impl<'a> Widget for Timeline<'a> {
 
             if let Some(j) = self.selected_checkpoint_idx {
                 if i == j {
-                    title_top = title_top.bold().underlined();
+                    title_top = title_top.bold().bg(Color::Gray).fg(Color::Black);
                 }
             }
 

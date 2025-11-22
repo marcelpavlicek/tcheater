@@ -225,7 +225,7 @@ impl App {
             let rounded_start = selected_ch.rounded_time();
 
             let mut lines = vec![Line::from(vec![
-                Span::from(" Started: "),
+                Span::from(" Started: ").fg(Color::Gray),
                 Span::from(selected_ch.time.format("%H:%M").to_string()),
                 Span::from(" ("),
                 Span::from(rounded_start.format("%H:%M").to_string()),
@@ -235,7 +235,7 @@ impl App {
             if let Some(next_ch) = next_ch {
                 let rounded_end = next_ch.rounded_time();
                 lines.push(Line::from(vec![
-                    Span::from("Finished: "),
+                    Span::from("Finished: ").fg(Color::Gray),
                     Span::from(next_ch.time.format("%H:%M").to_string()),
                     Span::from(" ("),
                     Span::from(rounded_end.format("%H:%M").to_string()),
@@ -244,34 +244,42 @@ impl App {
             }
 
             lines.push(Line::from(vec![
-                Span::from(" Comment: "),
+                Span::from(" Comment: ").fg(Color::Gray),
                 Span::from(selected_ch.message.as_deref().unwrap_or("")).bg(Color::Indexed(28)),
             ]));
 
             lines.push(Line::from(vec![
                 Span::from(
                     " Project: https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id=",
-                ),
+                )
+                .fg(Color::Gray),
                 Span::from(selected_ch.project.as_deref().unwrap_or("")),
             ]));
 
             frame.render_widget(Paragraph::new(lines), checkpoint_area);
         }
-        let projs = self
-            .projects
-            .iter()
-            .enumerate()
-            .map(|(i, p)| {
-                Line::from(vec![
-                    Span::from(format!("{}", i + 1)).bg(Color::Indexed(p.color)),
-                    " ".into(),
-                    Span::from(p.id.as_str()),
-                    " ".into(),
-                    p.name.as_str().into(),
-                ])
-            })
-            .collect::<Vec<Line>>();
-        frame.render_widget(Paragraph::new(projs), projects_area);
+
+        let mut project_lines: Vec<Line> = vec![];
+
+        for (i, p) in self.projects.iter().enumerate() {
+            project_lines.append(&mut vec![Line::from(vec![
+                Span::from(format!("{}", i + 1)).bg(Color::Indexed(p.color)),
+                " ".into(),
+                Span::from(p.id.as_str()).fg(Color::Gray),
+                " ".into(),
+                Span::from(&p.name).fg(Color::Gray),
+            ])]);
+
+            let task_lines = &mut p
+                .tasks
+                .iter()
+                .map(|t| Line::from(vec![Span::from("  - "), Span::from(t)]))
+                .collect::<Vec<Line>>();
+
+            project_lines.append(task_lines);
+        }
+        frame.render_widget(Paragraph::new(project_lines), projects_area);
+
         self.render_input(frame, input_area);
     }
 
@@ -286,7 +294,10 @@ impl App {
             Event::Key(key) if key.kind == KeyEventKind::Press => match self.input_mode {
                 InputMode::Normal => self.on_key_event(key).await,
                 InputMode::Editing => match key.code {
-                    KeyCode::Enter => self.push_message().await,
+                    KeyCode::Enter => {
+                        self.push_message().await;
+                        self.stop_editing();
+                    }
                     KeyCode::Esc => self.stop_editing(),
                     _ => {
                         self.input.handle_event(&event);
@@ -344,6 +355,7 @@ impl App {
             Ok(checkpoint) => self.week.append_checkpoint(checkpoint),
             Err(err) => eprintln!("{}", err),
         };
+        self.load_week().await;
     }
 
     async fn delete_checkpoint(&mut self) {

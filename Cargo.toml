@@ -10,7 +10,7 @@ crossterm = "0.28.1"
 ratatui = "0.29.0"
 color-eyre = "0.6.3"
 chrono = "0.4.40"
-firestore = "0.44.1"
+firestore = "0.47.0"
 futures = "0.3.31"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0.218", features = ["derive"] }

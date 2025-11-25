@@ -130,8 +130,8 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         let unregistered_count = self.week.unregistered_checkpoints.len();
         let unregistered_height = if unregistered_count > 0 {
-            // Add 1 for the bottom border of the block
-            unregistered_count as u16 + 1
+            // Add 2 for the bottom and top border of the block
+            unregistered_count as u16 + 2
         } else {
             0
         };
@@ -155,7 +155,9 @@ impl App {
         let mut area_index = 0;
         if unregistered_height > 0 {
             let unregistered_area = areas[area_index];
-            let lines: Vec<Line> = self.week.unregistered_checkpoints
+            let lines: Vec<Line> = self
+                .week
+                .unregistered_checkpoints
                 .iter()
                 .map(|ch| {
                     Line::from(vec![
@@ -166,8 +168,8 @@ impl App {
                     ])
                 })
                 .collect();
-            let paragraph = Paragraph::new(lines)
-                .block(Block::bordered().title("Unregistered Checkpoints"));
+            let paragraph =
+                Paragraph::new(lines).block(Block::bordered().title("Unregistered Checkpoints"));
             frame.render_widget(paragraph, unregistered_area);
             area_index += 1;
         }
@@ -178,10 +180,7 @@ impl App {
         let input_area = areas[area_index + 5];
         let controls_area = areas[area_index + 6];
 
-        frame.render_widget(
-            HelpLine::default(),
-            controls_area,
-        );
+        frame.render_widget(HelpLine::default(), controls_area);
 
         let days_layout = Layout::horizontal(vec![Constraint::Length(5); self.mondays.len()])
             .spacing(1)
@@ -424,18 +423,18 @@ impl App {
         let thu = self.load_checkpoints(first_mon + Days::new(3)).await;
         let fri = self.load_checkpoints(first_mon + Days::new(4)).await;
 
-        let mut unregistered_checkpoints = vec![];
+        let mut unregistered = vec![];
 
-        // Iterate through all daily checkpoints and collect unregistered ones
-        for checkpoint in mon
-            .iter()
-            .chain(tue.iter())
-            .chain(wed.iter())
-            .chain(thu.iter())
-            .chain(fri.iter())
-        {
-            if !checkpoint.registered {
-                unregistered_checkpoints.push(checkpoint.clone());
+        // Iterate through each day's checkpoints and collect unregistered ones, excluding the last checkpoint of each day
+        for day_checkpoints in [&mon, &tue, &wed, &thu, &fri] {
+            if day_checkpoints.is_empty() {
+                continue;
+            }
+            let last_idx = day_checkpoints.len() - 1;
+            for (idx, checkpoint) in day_checkpoints.iter().enumerate() {
+                if !checkpoint.registered && idx != last_idx {
+                    unregistered.push(checkpoint.clone());
+                }
             }
         }
 
@@ -445,7 +444,7 @@ impl App {
             wed,
             thu,
             fri,
-            unregistered_checkpoints,
+            unregistered_checkpoints: unregistered,
             selected_weekday: chrono::Weekday::Mon,
             selected_checkpoint_idx: 0,
         };

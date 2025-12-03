@@ -7,13 +7,11 @@ pub struct AuthConfig {
     pub password: String,
 }
 
-use std::collections::HashMap;
 use reqwest::Client;
+use std::collections::HashMap;
 
 pub async fn login(config: &AuthConfig) -> Result<String, Box<dyn std::error::Error>> {
-    let client = Client::builder()
-        .cookie_store(true)
-        .build()?;
+    let client = Client::builder().cookie_store(true).build()?;
 
     let mut params = HashMap::new();
     params.insert("action", "login");
@@ -21,10 +19,7 @@ pub async fn login(config: &AuthConfig) -> Result<String, Box<dyn std::error::Er
     params.insert("username", &config.username);
     params.insert("password", &config.password);
 
-    let response = client.post(&config.login_url)
-        .form(&params)
-        .send()
-        .await?;
+    let response = client.post(&config.login_url).form(&params).send().await?;
 
     for cookie in response.cookies() {
         if cookie.name() == "LoginCookie" {

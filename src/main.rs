@@ -31,10 +31,11 @@ async fn main() {
     };
 
     let projects = projects::Project::from_toml_file(home_dir.join("projects.toml")).unwrap();
-    let config = config::Config::from_toml_file(home_dir.join("config.toml")).unwrap_or_else(|_| {
-        eprintln!("Failed to load config.toml");
-        exit(1);
-    });
+    let config =
+        config::Config::from_toml_file(home_dir.join("config.toml")).unwrap_or_else(|_| {
+            eprintln!("Failed to load config.toml");
+            exit(1);
+        });
 
     let login_cookie = match auth::login(&config.auth).await {
         Ok(cookie) => cookie,

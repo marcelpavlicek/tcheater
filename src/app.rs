@@ -92,6 +92,7 @@ pub struct App {
     mondays: Vec<NaiveDate>,
     selected_mon_idx: usize,
     week: Week,
+    login_cookie: Option<String>,
 }
 
 impl App {
@@ -106,7 +107,12 @@ impl App {
             mondays,
             selected_mon_idx: 0,
             week: Week::new(),
+            login_cookie: None,
         }
+    }
+
+    pub fn set_login_cookie(&mut self, cookie: String) {
+        self.login_cookie = Some(cookie);
     }
 
     /// Run the application's main loop.

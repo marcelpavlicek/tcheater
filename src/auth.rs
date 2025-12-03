@@ -8,14 +8,11 @@ pub struct AuthConfig {
 }
 
 use std::collections::HashMap;
-use reqwest::{Client, Url};
-use std::sync::Arc;
-use reqwest::cookie::{CookieStore, Jar};
+use reqwest::Client;
 
 pub async fn login(config: &AuthConfig) -> Result<String, Box<dyn std::error::Error>> {
-    let jar = Arc::new(Jar::default());
     let client = Client::builder()
-        .cookie_provider(jar.clone())
+        .cookie_store(true)
         .build()?;
 
     let mut params = HashMap::new();
@@ -24,33 +21,16 @@ pub async fn login(config: &AuthConfig) -> Result<String, Box<dyn std::error::Er
     params.insert("username", &config.username);
     params.insert("password", &config.password);
 
-    let _ = client.post(&config.login_url)
+    let response = client.post(&config.login_url)
         .form(&params)
         .send()
         .await?;
 
-    let url = config.login_url.parse::<Url>()?;
-    let cookie_header = jar.cookies(&url);
-
-    if let Some(header_value) = cookie_header {
-        if let Some(cookie) = header_value.to_str().ok().and_then(|c| {
-            c.split(';').find_map(|s| {
-                let mut parts = s.splitn(2, '=');
-                if let (Some(name), Some(value)) = (parts.next(), parts.next()) {
-                    if name.trim() == "LoginCookie" {
-                        return Some(value.trim().to_string());
-                    }
-                }
-                None
-            })
-        }) {
-            return Ok(cookie);
+    for cookie in response.cookies() {
+        if cookie.name() == "LoginCookie" {
+            return Ok(cookie.value().to_string());
         }
     }
-
-    // Fallback: Check if the jar has the cookie directly (Cookie store implementation detail)
-    // reqwest::cookie::Jar::cookies returns a HeaderValue which is a string "name=value; name2=value2"
-    // So the parsing above is correct.
 
     Err("LoginCookie not found in response".into())
 }

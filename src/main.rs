@@ -7,6 +7,8 @@ use directories::UserDirs;
 use time::get_mondays_in_month;
 
 pub mod app;
+pub mod auth;
+pub mod config;
 pub mod firestore;
 pub mod projects;
 pub mod time;
@@ -29,6 +31,18 @@ async fn main() {
     };
 
     let projects = projects::Project::from_toml_file(home_dir.join("projects.toml")).unwrap();
+    let config = config::Config::from_toml_file(home_dir.join("config.toml")).unwrap_or_else(|_| {
+        eprintln!("Failed to load config.toml");
+        exit(1);
+    });
+
+    let login_cookie = match auth::login(&config.auth).await {
+        Ok(cookie) => cookie,
+        Err(err) => {
+            eprintln!("Failed to login: {}", err);
+            exit(1);
+        }
+    };
 
     // Get month from command line argument or use current month
     let month = env::args()
@@ -41,7 +55,9 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    if let Err(err) = App::new(db, projects, mondays).run(terminal).await {
+    let mut app = App::new(db, projects, mondays);
+    app.set_login_cookie(login_cookie);
+    if let Err(err) = app.run(terminal).await {
         eprintln!("{}", err);
     }
     ratatui::restore();

@@ -7,11 +7,14 @@ pub struct AuthConfig {
     pub password: String,
 }
 
-use reqwest::Client;
+use reqwest::{redirect::Policy, Client};
 use std::collections::HashMap;
 
 pub async fn login(config: &AuthConfig) -> Result<String, Box<dyn std::error::Error>> {
-    let client = Client::builder().cookie_store(true).build()?;
+    let client = Client::builder()
+        .redirect(Policy::none())
+        .cookie_store(true)
+        .build()?;
 
     let mut params = HashMap::new();
     params.insert("action", "login");

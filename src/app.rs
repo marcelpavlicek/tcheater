@@ -4,8 +4,8 @@ use tui_input::Input;
 
 use chrono::{DateTime, Days, Local, NaiveDate, TimeDelta, Weekday};
 use color_eyre::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use firestore::FirestoreDb;
+use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style, Stylize},
@@ -281,7 +281,7 @@ impl App {
 
             lines.push(Line::from(vec![
                 Span::from(" Comment: ").fg(Color::Gray),
-                Span::from(selected_ch.message.as_deref().unwrap_or("")).bg(Color::Indexed(28)),
+                Span::from(selected_ch.message.as_deref().unwrap_or("")).fg(Color::Green),
             ]));
 
             lines.push(Line::from(vec![
@@ -525,7 +525,16 @@ impl App {
 
     async fn assign_project(&mut self, num: usize) {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
-            selected.project = Some(self.projects[num].id.clone());
+            let project_id = self.projects[num].id.clone();
+            if let Some(current_project_id) = &selected.project {
+                if current_project_id == &project_id {
+                    selected.project = None;
+                } else {
+                    selected.project = Some(project_id);
+                }
+            } else {
+                selected.project = Some(project_id);
+            }
 
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);

@@ -7,9 +7,9 @@ use directories::UserDirs;
 use time::get_mondays_in_month;
 
 pub mod app;
-pub mod auth;
 pub mod config;
 pub mod firestore;
+pub mod pbs;
 pub mod projects;
 pub mod time;
 pub mod timeline_widget;
@@ -37,13 +37,17 @@ async fn main() {
             exit(1);
         });
 
-    let login_cookie = match auth::login(&config.auth).await {
+    let tasks = match pbs::fetch_tasks(&config.auth).await {
         Ok(cookie) => cookie,
         Err(err) => {
             eprintln!("Failed to login: {}", err);
             exit(1);
         }
     };
+
+    for task in tasks {
+        println!("{} - {}", task.id, task.name);
+    }
 
     // Get month from command line argument or use current month
     let month = env::args()
@@ -56,9 +60,7 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    let mut app = App::new(db, projects, mondays);
-    app.set_login_cookie(login_cookie);
-    if let Err(err) = app.run(terminal).await {
+    if let Err(err) = App::new(db, projects, mondays).run(terminal).await {
         eprintln!("{}", err);
     }
     ratatui::restore();

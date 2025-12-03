@@ -1,4 +1,4 @@
-use crate::auth::AuthConfig;
+use crate::pbs::AuthConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;

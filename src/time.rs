@@ -46,7 +46,7 @@ impl Week {
     }
 
     pub fn select_next_checkpoint(&mut self) {
-        if self.active_day().len() > self.selected_checkpoint_idx + 2 {
+        if self.active_day().len() > self.selected_checkpoint_idx + 1 {
             self.selected_checkpoint_idx += 1;
         }
     }

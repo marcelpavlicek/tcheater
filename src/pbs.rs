@@ -69,3 +69,33 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
     }
     Ok(vec![])
 }
+
+pub fn rescale(val: f64, old_min: f64, old_max: f64, new_min: f64, new_max: f64) -> f64 {
+    if old_max == old_min {
+        return new_min;
+    }
+    ((val - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rescale() {
+        assert_eq!(rescale(5.0, 0.0, 10.0, 0.0, 100.0), 50.0);
+        assert_eq!(rescale(0.0, 0.0, 10.0, 0.0, 100.0), 0.0);
+        assert_eq!(rescale(10.0, 0.0, 10.0, 0.0, 100.0), 100.0);
+        assert_eq!(rescale(2.5, 0.0, 5.0, 0.0, 10.0), 5.0);
+    }
+
+    #[test]
+    fn test_rescale_inverse() {
+        assert_eq!(rescale(5.0, 0.0, 10.0, 100.0, 0.0), 50.0);
+    }
+
+    #[test]
+    fn test_rescale_zero_range() {
+        assert_eq!(rescale(5.0, 10.0, 10.0, 0.0, 100.0), 0.0);
+    }
+}

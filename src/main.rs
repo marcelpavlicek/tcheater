@@ -46,17 +46,26 @@ async fn main() {
     };
 
     for task in tasks {
-        println!("{} - {}", task.id, task.name);
+        println!(
+            "https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id={} - {}",
+            task.id, task.name
+        );
     }
 
-    // Get month from command line argument or use current month
+    // Get month and year from command line arguments or use current
+    let now = Local::now();
     let month = env::args()
         .nth(1)
         .and_then(|arg| arg.parse::<u32>().ok())
         .filter(|&m| (1..=12).contains(&m))
-        .unwrap_or_else(|| Local::now().month());
+        .unwrap_or_else(|| now.month());
 
-    let mondays = get_mondays_in_month(month);
+    let year = env::args()
+        .nth(2)
+        .and_then(|arg| arg.parse::<i32>().ok())
+        .unwrap_or_else(|| now.year());
+
+    let mondays = get_mondays_in_month(year, month);
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();

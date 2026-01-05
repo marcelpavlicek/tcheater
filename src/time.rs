@@ -354,58 +354,58 @@ pub fn current_date_minus_seven_days() -> DateTime<Local> {
     Local::now() - Duration::days(7)
 }
 
-/// Returns all Mondays in the given month as DateTime<Local> objects.
+/// Returns all Mondays in the given month of the given year as NaiveDate objects.
 ///
 /// # Arguments
 ///
+/// * `year` - The year
 /// * `month` - The month (1-12) for which to find all Mondays
 ///
 /// # Returns
 ///
-/// A vector of DateTime<Local> objects representing all Mondays in the specified month.
+/// A vector of NaiveDate objects representing all Mondays in the specified month.
 /// Returns an empty vector if the month is invalid (not 1-12).
-pub fn get_mondays_in_month(month: u32) -> Vec<NaiveDate> {
+pub fn get_mondays_in_month(year: i32, month: u32) -> Vec<NaiveDate> {
     if !(1..=12).contains(&month) {
         return Vec::new();
     }
 
-    let now = Local::now().naive_local().date();
-    let now_year = now.year();
-
     let mut mondays = Vec::new();
 
     // Get the first day of the month
-    let first_day = match NaiveDate::from_ymd_opt(now_year, month, 1) {
+    let first_day = match NaiveDate::from_ymd_opt(year, month, 1) {
         Some(date) => date,
         None => return Vec::new(),
     };
 
-    // Find the first Monday of the month
-    let days_until_monday = match first_day.weekday() {
-        Weekday::Mon => 0,
-        Weekday::Tue => -1,
-        Weekday::Wed => -2,
-        Weekday::Thu => -3,
-        Weekday::Fri => -4,
-        Weekday::Sat => -5,
-        Weekday::Sun => -6,
+    // Find the Monday of the week containing the first day of the month.
+    let first_monday = first_day - Duration::days(first_day.weekday().num_days_from_monday() as i64);
+
+    let (next_month, next_month_year) = if month == 12 {
+        (1, year + 1)
+    } else {
+        (month + 1, year)
     };
+    let first_day_of_next_month =
+        NaiveDate::from_ymd_opt(next_month_year, next_month, 1).unwrap();
 
-    let first_monday = first_day + Duration::days(days_until_monday);
-
-    // Collect all Mondays in the month
+    // Collect all Mondays up to the next month.
     let mut current_monday = first_monday;
-    while current_monday.month() <= month && current_monday <= now {
-        // Convert to DateTime<Local> at midnight
-        // if let Some(datetime) = Local
-        //     .from_local_datetime(&current_monday.and_hms_opt(0, 0, 0).unwrap())
-        //     .single()
-        // {
-        //     mondays.push(datetime);
-        // }
+    while current_monday < first_day_of_next_month {
         mondays.push(current_monday);
         current_monday += Duration::days(7);
     }
 
     mondays
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_mondays_in_month() {
+        let mondays = get_mondays_in_month(2025, 1);
+        assert!(!mondays.is_empty());
+    }
 }

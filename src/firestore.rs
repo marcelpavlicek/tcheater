@@ -39,8 +39,10 @@ pub async fn find_checkpoints(
     stream.try_collect().await
 }
 
-pub async fn insert_checkpoint(db: &FirestoreDb) -> FirestoreResult<Checkpoint> {
-    let checkpoint = Checkpoint::new();
+pub async fn insert_checkpoint(
+    db: &FirestoreDb,
+    checkpoint: Checkpoint,
+) -> FirestoreResult<Checkpoint> {
     db.fluent()
         .insert()
         .into("checkpoints")

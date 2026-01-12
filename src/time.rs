@@ -379,15 +379,15 @@ pub fn get_mondays_in_month(year: i32, month: u32) -> Vec<NaiveDate> {
     };
 
     // Find the Monday of the week containing the first day of the month.
-    let first_monday = first_day - Duration::days(first_day.weekday().num_days_from_monday() as i64);
+    let first_monday =
+        first_day - Duration::days(first_day.weekday().num_days_from_monday() as i64);
 
     let (next_month, next_month_year) = if month == 12 {
         (1, year + 1)
     } else {
         (month + 1, year)
     };
-    let first_day_of_next_month =
-        NaiveDate::from_ymd_opt(next_month_year, next_month, 1).unwrap();
+    let first_day_of_next_month = NaiveDate::from_ymd_opt(next_month_year, next_month, 1).unwrap();
 
     // Collect all Mondays up to the next month.
     let mut current_monday = first_monday;

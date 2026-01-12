@@ -18,6 +18,8 @@ impl Widget for HelpLine {
             Span::raw("<space>"),
             Span::styled(" | Del: ", help_style),
             Span::raw("d"),
+            Span::styled(" | Split: ", help_style),
+            Span::raw("s"),
             Span::styled(" | Message: ", help_style),
             Span::raw("m"),
             Span::styled(" | Lenghten: ", help_style),

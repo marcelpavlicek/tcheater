@@ -355,6 +355,7 @@ impl App {
             // Add other key handlers here.
             (_, KeyCode::Char('m')) => self.start_editing(),
             (_, KeyCode::Char(' ')) => self.append_checkpoint().await,
+            (_, KeyCode::Char('s')) => self.split_checkpoint().await,
             (_, KeyCode::Char('d')) => self.delete_checkpoint().await,
             (_, KeyCode::Char('1')) => self.assign_project(0).await,
             (_, KeyCode::Char('2')) => self.assign_project(1).await,
@@ -387,10 +388,38 @@ impl App {
     /// Append new checkpoint with the current time
     async fn append_checkpoint(&mut self) {
         // Create a new checkpoint with the current time
-        match insert_checkpoint(&self.db).await {
+        match insert_checkpoint(&self.db, Checkpoint::new()).await {
             Ok(checkpoint) => self.week.append_checkpoint(checkpoint),
             Err(err) => eprintln!("{}", err),
         };
+        self.load_week().await;
+    }
+
+    async fn split_checkpoint(&mut self) {
+        let (start_time, end_time) = {
+            let selected = self.week.selected_checkpoint();
+            let next = self.week.next_checkpoint();
+            match (selected, next) {
+                (Some(s), Some(n)) => (s.time, n.time),
+                _ => return,
+            }
+        };
+
+        let duration = end_time - start_time;
+        // Check if duration is positive
+        if duration <= TimeDelta::zero() {
+            return;
+        }
+
+        let half_duration = duration / 2;
+        let mid_time = start_time + half_duration;
+
+        let mut new_checkpoint = Checkpoint::new();
+        new_checkpoint.time = mid_time;
+
+        if let Err(err) = insert_checkpoint(&self.db, new_checkpoint).await {
+            eprintln!("{}", err);
+        }
         self.load_week().await;
     }
 

@@ -2,7 +2,7 @@ use std::{fmt::Display, vec};
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
-use chrono::{DateTime, Days, Local, NaiveDate, TimeDelta, Weekday};
+use chrono::{Datelike, DateTime, Days, Local, NaiveDate, TimeDelta, Weekday};
 use color_eyre::Result;
 use firestore::FirestoreDb;
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -97,6 +97,13 @@ pub struct App {
 impl App {
     /// Construct a new instance of [`App`].
     pub fn new(db: FirestoreDb, projects: Vec<Project>, mondays: Vec<NaiveDate>) -> Self {
+        let today = Local::now().date_naive();
+        let current_monday = today - TimeDelta::days(today.weekday().num_days_from_monday() as i64);
+        let selected_mon_idx = mondays
+            .iter()
+            .position(|&m| m == current_monday)
+            .unwrap_or(0);
+
         Self {
             running: true,
             input: Input::default(),
@@ -104,7 +111,7 @@ impl App {
             db,
             projects,
             mondays,
-            selected_mon_idx: 0,
+            selected_mon_idx,
             week: Week::new(),
         }
     }

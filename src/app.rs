@@ -2,7 +2,7 @@ use std::{fmt::Display, vec};
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
 
-use chrono::{Datelike, DateTime, Days, Local, NaiveDate, TimeDelta, Weekday};
+use chrono::{DateTime, Datelike, Days, Local, NaiveDate, TimeDelta, Weekday};
 use color_eyre::Result;
 use firestore::FirestoreDb;
 use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};

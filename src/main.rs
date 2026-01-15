@@ -54,7 +54,10 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    if let Err(err) = App::new(db, projects, mondays, config.auth).run(terminal).await {
+    if let Err(err) = App::new(db, projects, mondays, config.auth)
+        .run(terminal)
+        .await
+    {
         eprintln!("{}", err);
     }
     ratatui::restore();

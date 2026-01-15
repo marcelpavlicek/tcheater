@@ -396,30 +396,10 @@ impl App {
             match key.code {
                 KeyCode::Esc => self.show_task_popup = false,
                 KeyCode::Down => {
-                    let i = match self.task_popup_state.selected() {
-                        Some(i) => {
-                            if i >= self.tasks.len() - 1 {
-                                0
-                            } else {
-                                i + 1
-                            }
-                        }
-                        None => 0,
-                    };
-                    self.task_popup_state.select(Some(i));
+                    self.task_popup_state.select_next();
                 }
                 KeyCode::Up => {
-                    let i = match self.task_popup_state.selected() {
-                        Some(i) => {
-                            if i == 0 {
-                                self.tasks.len() - 1
-                            } else {
-                                i - 1
-                            }
-                        }
-                        None => 0,
-                    };
-                    self.task_popup_state.select(Some(i));
+                    self.task_popup_state.select_previous();
                 }
                 _ => {}
             }

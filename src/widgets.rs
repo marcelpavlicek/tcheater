@@ -34,6 +34,8 @@ impl Widget for HelpLine {
             Span::raw("<tab>"),
             Span::styled(" | Registered: ", help_style),
             Span::raw("r"),
+            Span::styled(" | Tasks: ", help_style),
+            Span::raw("p"),
             Span::styled(" | Assign: ", help_style),
             Span::raw("1-9"),
             Span::styled(" | Quit: ", help_style),

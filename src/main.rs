@@ -37,21 +37,6 @@ async fn main() {
             exit(1);
         });
 
-    let tasks = match pbs::fetch_tasks(&config.auth).await {
-        Ok(cookie) => cookie,
-        Err(err) => {
-            eprintln!("Failed to login: {}", err);
-            exit(1);
-        }
-    };
-
-    for task in tasks {
-        println!(
-            "https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id={} - {}",
-            task.id, task.name
-        );
-    }
-
     // Get month and year from command line arguments or use current
     let now = Local::now();
     let month = env::args()
@@ -69,7 +54,7 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    if let Err(err) = App::new(db, projects, mondays).run(terminal).await {
+    if let Err(err) = App::new(db, projects, mondays, config.auth).run(terminal).await {
         eprintln!("{}", err);
     }
     ratatui::restore();

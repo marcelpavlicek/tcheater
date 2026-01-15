@@ -17,11 +17,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     firestore::{delete_checkpoint, find_checkpoints, insert_checkpoint, update_checkpoint},
+    pbs::{fetch_tasks, AuthConfig, PbsTask},
     projects::{find_by_id, Project},
     time::{round_to_nearest_fifteen_minutes, Week},
     timeline_widget::Timeline,
     widgets::HelpLine,
 };
+
+use ratatui::widgets::{Clear, List, ListItem, ListState};
 
 #[derive(Default)]
 pub struct TimeSpan {
@@ -92,11 +95,20 @@ pub struct App {
     mondays: Vec<NaiveDate>,
     selected_mon_idx: usize,
     week: Week,
+    auth_config: AuthConfig,
+    tasks: Vec<PbsTask>,
+    show_task_popup: bool,
+    task_popup_state: ListState,
 }
 
 impl App {
     /// Construct a new instance of [`App`].
-    pub fn new(db: FirestoreDb, projects: Vec<Project>, mondays: Vec<NaiveDate>) -> Self {
+    pub fn new(
+        db: FirestoreDb,
+        projects: Vec<Project>,
+        mondays: Vec<NaiveDate>,
+        auth_config: AuthConfig,
+    ) -> Self {
         let today = Local::now().date_naive();
         let current_monday = today - TimeDelta::days(today.weekday().num_days_from_monday() as i64);
         let selected_mon_idx = mondays
@@ -113,6 +125,10 @@ impl App {
             mondays,
             selected_mon_idx,
             week: Week::new(),
+            auth_config,
+            tasks: vec![],
+            show_task_popup: false,
+            task_popup_state: ListState::default(),
         }
     }
 
@@ -324,6 +340,26 @@ impl App {
         frame.render_widget(Paragraph::new(project_lines), projects_area);
 
         self.render_input(frame, input_area);
+
+        if self.show_task_popup {
+            let area = centered_rect(60, 50, frame.area());
+            frame.render_widget(Clear, area);
+            let items: Vec<ListItem> = self
+                .tasks
+                .iter()
+                .map(|t| ListItem::new(format!("{} - {}", t.id, t.name)))
+                .collect();
+            let list = List::new(items)
+                .block(Block::bordered().title("Select Task"))
+                .highlight_style(
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(ratatui::style::Modifier::BOLD),
+                )
+                .highlight_symbol(">> ");
+
+            frame.render_stateful_widget(list, area, &mut self.task_popup_state);
+        }
     }
 
     /// Reads the crossterm events and updates the state of [`App`].
@@ -356,11 +392,46 @@ impl App {
 
     /// Handles the key events and updates the state of [`App`].
     async fn on_key_event(&mut self, key: KeyEvent) {
+        if self.show_task_popup {
+            match key.code {
+                KeyCode::Esc => self.show_task_popup = false,
+                KeyCode::Down => {
+                    let i = match self.task_popup_state.selected() {
+                        Some(i) => {
+                            if i >= self.tasks.len() - 1 {
+                                0
+                            } else {
+                                i + 1
+                            }
+                        }
+                        None => 0,
+                    };
+                    self.task_popup_state.select(Some(i));
+                }
+                KeyCode::Up => {
+                    let i = match self.task_popup_state.selected() {
+                        Some(i) => {
+                            if i == 0 {
+                                self.tasks.len() - 1
+                            } else {
+                                i - 1
+                            }
+                        }
+                        None => 0,
+                    };
+                    self.task_popup_state.select(Some(i));
+                }
+                _ => {}
+            }
+            return;
+        }
+
         match (key.modifiers, key.code) {
             (_, KeyCode::Esc | KeyCode::Char('q'))
             | (KeyModifiers::CONTROL, KeyCode::Char('c') | KeyCode::Char('C')) => self.quit().await,
             // Add other key handlers here.
             (_, KeyCode::Char('m')) => self.start_editing(),
+            (_, KeyCode::Char('p')) => self.fetch_tasks().await,
             (_, KeyCode::Char(' ')) => self.append_checkpoint().await,
             (_, KeyCode::Char('s')) => self.split_checkpoint().await,
             (_, KeyCode::Char('d')) => self.delete_checkpoint().await,
@@ -384,6 +455,19 @@ impl App {
             (_, KeyCode::Tab) => self.cycle_weeks().await,
             (_, KeyCode::Char('r')) => self.mark_registered().await,
             _ => {}
+        }
+    }
+
+    async fn fetch_tasks(&mut self) {
+        match fetch_tasks(&self.auth_config).await {
+            Ok(tasks) => {
+                self.tasks = tasks;
+                self.show_task_popup = true;
+                self.task_popup_state.select(Some(0));
+            }
+            Err(err) => {
+                eprintln!("Failed to fetch tasks: {}", err);
+            }
         }
     }
 
@@ -637,4 +721,20 @@ impl App {
     //         }
     //     }
     // }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::vertical([
+        Constraint::Percentage((100 - percent_y) / 2),
+        Constraint::Percentage(percent_y),
+        Constraint::Percentage((100 - percent_y) / 2),
+    ])
+    .split(r);
+
+    Layout::horizontal([
+        Constraint::Percentage((100 - percent_x) / 2),
+        Constraint::Percentage(percent_x),
+        Constraint::Percentage((100 - percent_x) / 2),
+    ])
+    .split(popup_layout[1])[1]
 }

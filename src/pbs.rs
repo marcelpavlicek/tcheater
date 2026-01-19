@@ -7,6 +7,7 @@ pub struct AuthConfig {
     pub login_url: String,
     pub username: String,
     pub password: String,
+    pub task_url_prefix: String,
 }
 
 pub struct PbsTask {

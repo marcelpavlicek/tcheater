@@ -347,7 +347,11 @@ impl App {
             let items: Vec<ListItem> = self
                 .tasks
                 .iter()
-                .map(|t| ListItem::new(format!("{} - {}", t.id, t.name)))
+                .map(|t| {
+                    let url = format!("{}{}", self.auth_config.task_url_prefix, t.id);
+                    let text = format!("\x1b]8;;{}\x1b\\{} - {}\x1b]8;;\x1b\\", url, t.id, t.name);
+                    ListItem::new(text)
+                })
                 .collect();
             let list = List::new(items)
                 .block(Block::bordered().title("Select Task"))

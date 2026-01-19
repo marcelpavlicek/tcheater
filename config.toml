@@ -2,3 +2,4 @@
 login_url = "https://example.com/login"
 username = "your_username"
 password = "your_password"
+task_url_prefix = "https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id="

@@ -684,7 +684,7 @@ impl App {
 
     async fn mark_registered(&mut self) {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
-            selected.registered = true;
+            selected.registered = !selected.registered;
 
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);

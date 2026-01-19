@@ -347,14 +347,12 @@ impl App {
             let items: Vec<ListItem> = self
                 .tasks
                 .iter()
-                .map(|t| {
-                    let url = format!("{}{}", self.auth_config.task_url_prefix, t.id);
-                    let text = format!("\x1b]8;;{}\x1b\\{} - {}\x1b]8;;\x1b\\", url, t.id, t.name);
-                    ListItem::new(text)
-                })
+                .map(|t| ListItem::new(format!("{} - {}", t.id, t.name)))
                 .collect();
+            let block = Block::bordered().title("Select Task");
+            let inner_area = block.inner(area);
             let list = List::new(items)
-                .block(Block::bordered().title("Select Task"))
+                .block(block)
                 .highlight_style(
                     Style::default()
                         .fg(Color::Yellow)
@@ -363,6 +361,57 @@ impl App {
                 .highlight_symbol(">> ");
 
             frame.render_stateful_widget(list, area, &mut self.task_popup_state);
+
+            let visible_offset = self.task_popup_state.offset();
+            let height = inner_area.height as usize;
+            let buffer = frame.buffer_mut();
+
+            for i in 0..height {
+                let task_idx = visible_offset + i;
+                if task_idx >= self.tasks.len() {
+                    break;
+                }
+
+                let task = &self.tasks[task_idx];
+                let text = format!("{} - {}", task.id, task.name);
+                let url = format!("{}{}", self.auth_config.task_url_prefix, task.id);
+                let osc_start = format!("\x1b]8;;{}\x1b\\", url);
+                let osc_end = "\x1b]8;;\x1b\\";
+
+                let y = inner_area.y + i as u16;
+                // List adds 2 chars for highlight symbol ">> " or "   "
+                let x_start = inner_area.x; // The actual text starts after symbol?
+                // Default symbol is "   " (3 chars) if no symbol set?
+                // We set ">> ". Length is 3?
+                // ratatui List uses `highlight_symbol` width. If not selected, it uses spaces of same width.
+                // ">> " is 3 chars.
+                let symbol_width = 3;
+                let text_start_x = x_start + symbol_width;
+
+                if text_start_x >= inner_area.right() {
+                    continue;
+                }
+
+                // Inject start sequence
+                let cell = buffer.cell_mut((text_start_x, y));
+                if let Some(cell) = cell {
+                    let current_symbol = cell.symbol().to_string();
+                    cell.set_symbol(&format!("{}{}", osc_start, current_symbol));
+                }
+
+                // Inject end sequence
+                let text_width = text.chars().count() as u16; // Approximation. Better use unicode-width but simple for now.
+                let mut end_x = text_start_x + text_width - 1;
+                if end_x >= inner_area.right() {
+                    end_x = inner_area.right() - 1;
+                }
+
+                let cell = buffer.cell_mut((end_x, y));
+                if let Some(cell) = cell {
+                    let current_symbol = cell.symbol().to_string();
+                    cell.set_symbol(&format!("{}{}", current_symbol, osc_end));
+                }
+            }
         }
     }
 
@@ -688,7 +737,7 @@ impl App {
 
     async fn mark_registered(&mut self) {
         if let Some(selected) = self.week.selected_checkpoint_mut() {
-            selected.registered = !selected.registered;
+            selected.registered = true;
 
             if let Err(err) = update_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);

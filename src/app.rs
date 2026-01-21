@@ -98,6 +98,7 @@ pub struct App {
     auth_config: AuthConfig,
     tasks: Vec<PbsTask>,
     show_task_popup: bool,
+    show_task_url: bool,
     task_popup_state: ListState,
 }
 
@@ -128,6 +129,7 @@ impl App {
             auth_config,
             tasks: vec![],
             show_task_popup: false,
+            show_task_url: false,
             task_popup_state: ListState::default(),
         }
     }
@@ -308,10 +310,8 @@ impl App {
             ]));
 
             lines.push(Line::from(vec![
-                Span::from(
-                    " Project: https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id=",
-                )
-                .fg(Color::Gray),
+                Span::from(" Project: ").fg(Color::Gray),
+                Span::from(&self.auth_config.task_url_prefix).fg(Color::Gray),
                 Span::from(selected_ch.project.as_deref().unwrap_or("")),
             ]));
 
@@ -347,7 +347,18 @@ impl App {
             let items: Vec<ListItem> = self
                 .tasks
                 .iter()
-                .map(|t| ListItem::new(format!("{} - {}", t.id, t.name)))
+                .map(|t| {
+                    if self.show_task_url {
+                        let url = format!("{}{}", self.auth_config.task_url_prefix, t.id);
+                        let lines = vec![
+                            Line::from(format!("{} - {}", t.id, t.name)),
+                            Line::from(Span::from(url).fg(Color::Blue)),
+                        ];
+                        ListItem::new(lines)
+                    } else {
+                        ListItem::new(format!("{} - {}", t.id, t.name))
+                    }
+                })
                 .collect();
             let list = List::new(items)
                 .block(Block::bordered().title("Select Task"))
@@ -400,6 +411,9 @@ impl App {
                 }
                 KeyCode::Up => {
                     self.task_popup_state.select_previous();
+                }
+                KeyCode::Left => {
+                    self.show_task_url = !self.show_task_url;
                 }
                 _ => {}
             }

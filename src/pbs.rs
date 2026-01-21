@@ -2,11 +2,17 @@ use libxml::parser::Parser;
 use libxml::xpath::Context;
 use serde::{Deserialize, Serialize};
 
+fn default_task_url_prefix() -> String {
+    "https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id=".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthConfig {
     pub login_url: String,
     pub username: String,
     pub password: String,
+    #[serde(default = "default_task_url_prefix")]
+    pub task_url_prefix: String,
 }
 
 pub struct PbsTask {

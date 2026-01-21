@@ -100,6 +100,7 @@ pub struct App {
     show_task_popup: bool,
     show_task_url: bool,
     task_popup_state: ListState,
+    task_url_prefix: String,
 }
 
 impl App {
@@ -109,6 +110,7 @@ impl App {
         projects: Vec<Project>,
         mondays: Vec<NaiveDate>,
         auth_config: AuthConfig,
+        task_url_prefix: String,
     ) -> Self {
         let today = Local::now().date_naive();
         let current_monday = today - TimeDelta::days(today.weekday().num_days_from_monday() as i64);
@@ -131,6 +133,7 @@ impl App {
             show_task_popup: false,
             show_task_url: false,
             task_popup_state: ListState::default(),
+            task_url_prefix,
         }
     }
 
@@ -311,7 +314,7 @@ impl App {
 
             lines.push(Line::from(vec![
                 Span::from(" Project: ").fg(Color::Gray),
-                Span::from(&self.auth_config.task_url_prefix).fg(Color::Gray),
+                Span::from(&self.task_url_prefix).fg(Color::Gray),
                 Span::from(selected_ch.project.as_deref().unwrap_or("")),
             ]));
 
@@ -349,7 +352,7 @@ impl App {
                 .iter()
                 .map(|t| {
                     if self.show_task_url {
-                        let url = format!("{}{}", self.auth_config.task_url_prefix, t.id);
+                        let url = format!("{}{}", self.task_url_prefix, t.id);
                         let lines = vec![
                             Line::from(format!("{} - {}", t.id, t.name)),
                             Line::from(Span::from(url).fg(Color::Blue)),

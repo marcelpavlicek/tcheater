@@ -61,9 +61,9 @@ impl<'a> Widget for Timeline<'a> {
 
             if current_ch.project.is_none() {
                 if current_ch.message.as_deref().unwrap_or("").is_empty() {
-                    text = "·".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
-                } else {
                     text = " ".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
+                } else {
+                    text = "·".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
                 }
             }
 
@@ -135,12 +135,12 @@ mod tests {
         for y in 0..5 {
             let line_text: String = (0..40).map(|x| buffer[(x, y)].symbol()).collect();
             // println!("Line {}: {}", y, line_text); // Cannot print in test without capturing?
-            if line_text.contains("├····┤") {
+            if line_text.contains("├    ┤") {
                 found = true;
                 break;
             }
         }
-        assert!(found, "Did not find dotted line '├····┤' in buffer");
+        assert!(found, "Did not find dotted line '├    ┤' in buffer");
     }
 
     #[test]
@@ -183,11 +183,11 @@ mod tests {
         let mut found = false;
         for y in 0..5 {
             let line_text: String = (0..40).map(|x| buffer[(x, y)].symbol()).collect();
-            if line_text.contains("├    ┤") {
+            if line_text.contains("├····┤") {
                 found = true;
                 break;
             }
         }
-        assert!(found, "Did not find space line '├    ┤' in buffer");
+        assert!(found, "Did not find space line '├····┤' in buffer");
     }
 }

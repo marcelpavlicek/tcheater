@@ -60,7 +60,11 @@ impl<'a> Widget for Timeline<'a> {
             let timeline_style = Style::new().fg(current_ch.color(self.projects));
 
             if current_ch.project.is_none() {
-                text = " ".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
+                if current_ch.message.as_deref().unwrap_or("").is_empty() {
+                    text = "·".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
+                } else {
+                    text = " ".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
+                }
             }
 
             if !current_ch.registered {
@@ -79,5 +83,107 @@ impl<'a> Widget for Timeline<'a> {
                 .centered();
             p.render(areas[i], buf);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::{backend::TestBackend, Terminal};
+    use chrono::{Local, Duration};
+
+    #[test]
+    fn test_render_dotted_line_for_empty_checkpoint() {
+        let backend = TestBackend::new(40, 5);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        let start_time = Local::now();
+        // Create two checkpoints 15 minutes apart to get 1 unit span
+        let checkpoints = vec![
+            Checkpoint {
+                time: start_time,
+                project: None,
+                message: None,
+                ..Checkpoint::new()
+            },
+            Checkpoint {
+                time: start_time + Duration::minutes(15),
+                project: None,
+                message: None,
+                ..Checkpoint::new()
+            }
+        ];
+        let projects = vec![];
+
+        let widget = Timeline {
+            checkpoints: &checkpoints,
+            projects: &projects,
+            selected_checkpoint_idx: None,
+        };
+
+        terminal.draw(|f| {
+            f.render_widget(widget, f.area());
+        }).unwrap();
+
+        let buffer = terminal.backend().buffer();
+
+        // We expect "├····┤" somewhere.
+        // We iterate over lines and check content.
+        let mut found = false;
+        for y in 0..5 {
+            let line_text: String = (0..40).map(|x| buffer[(x, y)].symbol()).collect();
+            // println!("Line {}: {}", y, line_text); // Cannot print in test without capturing?
+            if line_text.contains("├····┤") {
+                found = true;
+                break;
+            }
+        }
+        assert!(found, "Did not find dotted line '├····┤' in buffer");
+    }
+
+    #[test]
+    fn test_render_spaces_for_empty_project_with_message() {
+        let backend = TestBackend::new(40, 5);
+        let mut terminal = Terminal::new(backend).unwrap();
+
+        let start_time = Local::now();
+        let checkpoints = vec![
+            Checkpoint {
+                time: start_time,
+                project: None,
+                message: Some("Break".to_string()),
+                ..Checkpoint::new()
+            },
+            Checkpoint {
+                time: start_time + Duration::minutes(15),
+                project: None,
+                message: None,
+                ..Checkpoint::new()
+            }
+        ];
+        let projects = vec![];
+
+        let widget = Timeline {
+            checkpoints: &checkpoints,
+            projects: &projects,
+            selected_checkpoint_idx: None,
+        };
+
+        terminal.draw(|f| {
+            f.render_widget(widget, f.area());
+        }).unwrap();
+
+        let buffer = terminal.backend().buffer();
+
+        // We expect "├    ┤" (spaces) somewhere.
+        let mut found = false;
+        for y in 0..5 {
+            let line_text: String = (0..40).map(|x| buffer[(x, y)].symbol()).collect();
+            if line_text.contains("├    ┤") {
+                found = true;
+                break;
+            }
+        }
+        assert!(found, "Did not find space line '├    ┤' in buffer");
     }
 }

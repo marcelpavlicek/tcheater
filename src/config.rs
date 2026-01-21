@@ -3,15 +3,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-fn default_task_url_prefix() -> String {
-    "https://pbs2.praguebest.cz/main.php?pageid=110&action=detail&id=".to_string()
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     pub auth: AuthConfig,
-    #[serde(default = "default_task_url_prefix")]
-    pub task_url_prefix: String,
+    #[serde(default)]
+    pub task_url_prefix: Option<String>,
 }
 
 impl Config {

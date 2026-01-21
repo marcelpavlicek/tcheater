@@ -100,7 +100,7 @@ pub struct App {
     show_task_popup: bool,
     show_task_url: bool,
     task_popup_state: ListState,
-    task_url_prefix: String,
+    task_url_prefix: Option<String>,
 }
 
 impl App {
@@ -110,7 +110,7 @@ impl App {
         projects: Vec<Project>,
         mondays: Vec<NaiveDate>,
         auth_config: AuthConfig,
-        task_url_prefix: String,
+        task_url_prefix: Option<String>,
     ) -> Self {
         let today = Local::now().date_naive();
         let current_monday = today - TimeDelta::days(today.weekday().num_days_from_monday() as i64);
@@ -312,11 +312,18 @@ impl App {
                 Span::from(selected_ch.message.as_deref().unwrap_or("")).fg(Color::Green),
             ]));
 
-            lines.push(Line::from(vec![
-                Span::from(" Project: ").fg(Color::Gray),
-                Span::from(&self.task_url_prefix).fg(Color::Gray),
-                Span::from(selected_ch.project.as_deref().unwrap_or("")),
-            ]));
+            if let Some(prefix) = &self.task_url_prefix {
+                lines.push(Line::from(vec![
+                    Span::from(" Project: ").fg(Color::Gray),
+                    Span::from(prefix).fg(Color::Gray),
+                    Span::from(selected_ch.project.as_deref().unwrap_or("")),
+                ]));
+            } else {
+                lines.push(Line::from(vec![
+                    Span::from(" Project: ").fg(Color::Gray),
+                    Span::from(selected_ch.project.as_deref().unwrap_or("")),
+                ]));
+            }
 
             frame.render_widget(Paragraph::new(lines), checkpoint_area);
         }
@@ -352,12 +359,16 @@ impl App {
                 .iter()
                 .map(|t| {
                     if self.show_task_url {
-                        let url = format!("{}{}", self.task_url_prefix, t.id);
-                        let lines = vec![
-                            Line::from(format!("{} - {}", t.id, t.name)),
-                            Line::from(Span::from(url).fg(Color::Blue)),
-                        ];
-                        ListItem::new(lines)
+                        if let Some(prefix) = &self.task_url_prefix {
+                            let url = format!("{}{}", prefix, t.id);
+                            let lines = vec![
+                                Line::from(format!("{} - {}", t.id, t.name)),
+                                Line::from(Span::from(url).fg(Color::Blue)),
+                            ];
+                            ListItem::new(lines)
+                        } else {
+                            ListItem::new(format!("{} - {}", t.id, t.name))
+                        }
                     } else {
                         ListItem::new(format!("{} - {}", t.id, t.name))
                     }

@@ -54,7 +54,7 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    if let Err(err) = App::new(db, projects, mondays, config.auth)
+    if let Err(err) = App::new(db, projects, mondays, config.auth, config.task_url_prefix)
         .run(terminal)
         .await
     {

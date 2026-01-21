@@ -89,8 +89,8 @@ impl<'a> Widget for Timeline<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{Duration, Local};
     use ratatui::{backend::TestBackend, Terminal};
-    use chrono::{Local, Duration};
 
     #[test]
     fn test_render_dotted_line_for_empty_checkpoint() {
@@ -111,7 +111,7 @@ mod tests {
                 project: None,
                 message: None,
                 ..Checkpoint::new()
-            }
+            },
         ];
         let projects = vec![];
 
@@ -121,9 +121,11 @@ mod tests {
             selected_checkpoint_idx: None,
         };
 
-        terminal.draw(|f| {
-            f.render_widget(widget, f.area());
-        }).unwrap();
+        terminal
+            .draw(|f| {
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
 
@@ -159,7 +161,7 @@ mod tests {
                 project: None,
                 message: None,
                 ..Checkpoint::new()
-            }
+            },
         ];
         let projects = vec![];
 
@@ -169,9 +171,11 @@ mod tests {
             selected_checkpoint_idx: None,
         };
 
-        terminal.draw(|f| {
-            f.render_widget(widget, f.area());
-        }).unwrap();
+        terminal
+            .draw(|f| {
+                f.render_widget(widget, f.area());
+            })
+            .unwrap();
 
         let buffer = terminal.backend().buffer();
 

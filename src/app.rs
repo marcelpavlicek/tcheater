@@ -1,3 +1,5 @@
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::{fmt::Display, vec};
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
@@ -70,7 +72,12 @@ impl Checkpoint {
         if let Some(project_id) = &self.project {
             match find_by_id(projects, project_id) {
                 Some(p) => Color::Indexed(p.color),
-                None => Color::White,
+                None => {
+                    let mut hasher = DefaultHasher::new();
+                    project_id.hash(&mut hasher);
+                    let hash = hasher.finish();
+                    Color::Indexed((hash % 216) as u8 + 16)
+                }
             }
         } else {
             Color::White
@@ -773,4 +780,63 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         Constraint::Percentage((100 - percent_x) / 2),
     ])
     .split(popup_layout[1])[1]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_checkpoint_color_generation() {
+        let mut checkpoint = Checkpoint::new();
+        checkpoint.message = Some("message".to_string());
+
+        let projects = vec![];
+
+        // Test with a task ID that should generate a color
+        checkpoint.project = Some("12345".to_string());
+        let color1 = checkpoint.color(&projects);
+
+        // Test with another task ID
+        checkpoint.project = Some("67890".to_string());
+        let color2 = checkpoint.color(&projects);
+
+        // Colors should be different (highly likely, but collisions are possible, so maybe test multiple)
+        // With only 2, collision is possible but unlikely if hash is good.
+        // Let's verify they are not White or Red
+
+        if let Color::Indexed(c) = color1 {
+            assert!(c >= 16 && c <= 231, "Color {} is out of range 16-231", c);
+        } else {
+            panic!("Expected Color::Indexed, got {:?}", color1);
+        }
+
+        if let Color::Indexed(c) = color2 {
+            assert!(c >= 16 && c <= 231, "Color {} is out of range 16-231", c);
+        } else {
+            panic!("Expected Color::Indexed, got {:?}", color2);
+        }
+
+        assert_ne!(color1, Color::White);
+        assert_ne!(color2, Color::White);
+        assert_ne!(color1, Color::Red);
+        assert_ne!(color2, Color::Red);
+
+        // Test with known project
+        let project = Project {
+            id: "proj1".to_string(),
+            name: "Project 1".to_string(),
+            color: 42,
+            tasks: vec![],
+        };
+        let projects_with_one = vec![project];
+        checkpoint.project = Some("proj1".to_string());
+        let color_known = checkpoint.color(&projects_with_one);
+        assert_eq!(color_known, Color::Indexed(42));
+
+        // Test with no message -> Red
+        checkpoint.message = None;
+        let color_no_msg = checkpoint.color(&projects_with_one);
+        assert_eq!(color_no_msg, Color::Red);
+    }
 }

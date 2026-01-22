@@ -426,7 +426,7 @@ impl App {
                 KeyCode::Up => {
                     self.task_popup_state.select_previous();
                 }
-                KeyCode::Left => {
+                KeyCode::Right => {
                     self.show_task_url = !self.show_task_url;
                 }
                 _ => {}

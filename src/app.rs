@@ -429,6 +429,10 @@ impl App {
                 KeyCode::Right => {
                     self.show_task_url = !self.show_task_url;
                 }
+                KeyCode::Enter => {
+                    self.assign_selected_task().await;
+                    self.show_task_popup = false;
+                }
                 _ => {}
             }
             return;
@@ -475,6 +479,30 @@ impl App {
             }
             Err(err) => {
                 eprintln!("Failed to fetch tasks: {}", err);
+            }
+        }
+    }
+
+    async fn assign_selected_task(&mut self) {
+        let task_id = if let Some(selected_idx) = self.task_popup_state.selected() {
+            self.tasks.get(selected_idx).map(|t| t.id.to_string())
+        } else {
+            None
+        };
+
+        if let Some(id) = task_id {
+            // Update local state
+            {
+                if let Some(selected_checkpoint) = self.week.selected_checkpoint_mut() {
+                    selected_checkpoint.project = Some(id);
+                }
+            }
+
+            // Update remote state
+            if let Some(selected_checkpoint) = self.week.selected_checkpoint() {
+                if let Err(err) = update_checkpoint(&self.db, selected_checkpoint).await {
+                    eprintln!("{}", err);
+                }
             }
         }
     }

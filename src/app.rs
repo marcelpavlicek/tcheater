@@ -352,7 +352,7 @@ impl App {
         self.render_input(frame, input_area);
 
         if self.show_task_popup {
-            let area = centered_rect(60, 50, frame.area());
+            let area = centered_rect(60, 80, frame.area());
             frame.render_widget(Clear, area);
             let items: Vec<ListItem> = self
                 .tasks

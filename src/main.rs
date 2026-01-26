@@ -10,7 +10,6 @@ pub mod app;
 pub mod config;
 pub mod firestore;
 pub mod pbs;
-pub mod projects;
 pub mod time;
 pub mod timeline_widget;
 pub mod widgets;
@@ -30,7 +29,6 @@ async fn main() {
         None => exit(1),
     };
 
-    let projects = projects::Project::from_toml_file(home_dir.join("projects.toml")).unwrap();
     let config =
         config::Config::from_toml_file(home_dir.join("config.toml")).unwrap_or_else(|_| {
             eprintln!("Failed to load config.toml");
@@ -54,7 +52,7 @@ async fn main() {
 
     color_eyre::install().unwrap();
     let terminal = ratatui::init();
-    if let Err(err) = App::new(db, projects, mondays, config.auth, config.task_url_prefix)
+    if let Err(err) = App::new(db, mondays, config.auth, config.task_url_prefix)
         .run(terminal)
         .await
     {

@@ -20,7 +20,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     firestore::{delete_checkpoint, find_checkpoints, insert_checkpoint, update_checkpoint},
     pbs::{fetch_tasks, AuthConfig, PbsTask},
-    projects::{find_by_id, Project},
     time::{round_to_nearest_fifteen_minutes, Week},
     timeline_widget::Timeline,
     widgets::HelpLine,
@@ -64,21 +63,16 @@ impl Checkpoint {
         round_to_nearest_fifteen_minutes(self.time)
     }
 
-    pub fn color(&self, projects: &[Project]) -> Color {
+    pub fn color(&self) -> Color {
         if self.message.is_none() {
             return Color::Red;
         }
 
         if let Some(project_id) = &self.project {
-            match find_by_id(projects, project_id) {
-                Some(p) => Color::Indexed(p.color),
-                None => {
-                    let mut hasher = DefaultHasher::new();
-                    project_id.hash(&mut hasher);
-                    let hash = hasher.finish();
-                    Color::Indexed((hash % 216) as u8 + 16)
-                }
-            }
+            let mut hasher = DefaultHasher::new();
+            project_id.hash(&mut hasher);
+            let hash = hasher.finish();
+            Color::Indexed((hash % 216) as u8 + 16)
         } else {
             Color::White
         }
@@ -98,7 +92,6 @@ pub struct App {
     input: Input,
     input_mode: InputMode,
     db: FirestoreDb,
-    projects: Vec<Project>,
     mondays: Vec<NaiveDate>,
     selected_mon_idx: usize,
     week: Week,
@@ -114,7 +107,6 @@ impl App {
     /// Construct a new instance of [`App`].
     pub fn new(
         db: FirestoreDb,
-        projects: Vec<Project>,
         mondays: Vec<NaiveDate>,
         auth_config: AuthConfig,
         task_url_prefix: Option<String>,
@@ -131,7 +123,6 @@ impl App {
             input: Input::default(),
             input_mode: InputMode::default(),
             db,
-            projects,
             mondays,
             selected_mon_idx,
             week: Week::new(),
@@ -229,10 +220,7 @@ impl App {
             frame.render_widget(p, days_layout[i]);
         }
 
-        let [checkpoint_area, projects_area] =
-            Layout::vertical(vec![Constraint::Length(4), Constraint::Fill(1)])
-                .spacing(1)
-                .areas(fill_area);
+        let [checkpoint_area] = Layout::vertical(vec![Constraint::Length(4)]).areas(fill_area);
 
         let [mon_area, tue_area, wed_area, thu_area, fri_area] =
             Layout::vertical(vec![Constraint::Length(3); 5])
@@ -241,7 +229,6 @@ impl App {
 
         let mon_w = Timeline {
             checkpoints: &self.week.mon,
-            projects: &self.projects,
             selected_checkpoint_idx: if self.week.selected_weekday == Weekday::Mon {
                 Some(self.week.selected_checkpoint_idx)
             } else {
@@ -250,7 +237,6 @@ impl App {
         };
         let tue_w = Timeline {
             checkpoints: &self.week.tue,
-            projects: &self.projects,
             selected_checkpoint_idx: if self.week.selected_weekday == Weekday::Tue {
                 Some(self.week.selected_checkpoint_idx)
             } else {
@@ -259,7 +245,6 @@ impl App {
         };
         let wed_w = Timeline {
             checkpoints: &self.week.wed,
-            projects: &self.projects,
             selected_checkpoint_idx: if self.week.selected_weekday == Weekday::Wed {
                 Some(self.week.selected_checkpoint_idx)
             } else {
@@ -268,7 +253,6 @@ impl App {
         };
         let thu_w = Timeline {
             checkpoints: &self.week.thu,
-            projects: &self.projects,
             selected_checkpoint_idx: if self.week.selected_weekday == Weekday::Thu {
                 Some(self.week.selected_checkpoint_idx)
             } else {
@@ -277,7 +261,6 @@ impl App {
         };
         let fri_w = Timeline {
             checkpoints: &self.week.fri,
-            projects: &self.projects,
             selected_checkpoint_idx: if self.week.selected_weekday == Weekday::Fri {
                 Some(self.week.selected_checkpoint_idx)
             } else {
@@ -334,27 +317,6 @@ impl App {
 
             frame.render_widget(Paragraph::new(lines), checkpoint_area);
         }
-
-        let mut project_lines: Vec<Line> = vec![];
-
-        for (i, p) in self.projects.iter().enumerate() {
-            project_lines.append(&mut vec![Line::from(vec![
-                Span::from(format!("{}", i + 1)).bg(Color::Indexed(p.color)),
-                " ".into(),
-                Span::from(p.id.as_str()).fg(Color::Gray),
-                " ".into(),
-                Span::from(&p.name).fg(Color::Gray),
-            ])]);
-
-            let task_lines = &mut p
-                .tasks
-                .iter()
-                .map(|t| Line::from(vec![Span::from("  - "), Span::from(t)]))
-                .collect::<Vec<Line>>();
-
-            project_lines.append(task_lines);
-        }
-        frame.render_widget(Paragraph::new(project_lines), projects_area);
 
         self.render_input(frame, input_area);
 
@@ -454,15 +416,6 @@ impl App {
             (_, KeyCode::Char(' ')) => self.append_checkpoint().await,
             (_, KeyCode::Char('s')) => self.split_checkpoint().await,
             (_, KeyCode::Char('d')) => self.delete_checkpoint().await,
-            (_, KeyCode::Char('1')) => self.assign_project(0).await,
-            (_, KeyCode::Char('2')) => self.assign_project(1).await,
-            (_, KeyCode::Char('3')) => self.assign_project(2).await,
-            (_, KeyCode::Char('4')) => self.assign_project(3).await,
-            (_, KeyCode::Char('5')) => self.assign_project(4).await,
-            (_, KeyCode::Char('6')) => self.assign_project(5).await,
-            (_, KeyCode::Char('7')) => self.assign_project(6).await,
-            (_, KeyCode::Char('8')) => self.assign_project(7).await,
-            (_, KeyCode::Char('9')) => self.assign_project(8).await,
             (KeyModifiers::CONTROL, KeyCode::Char('l')) => self.lenghten_ctrl_r().await,
             (_, KeyCode::Char('l')) => self.lenghten_r().await,
             (KeyModifiers::CONTROL, KeyCode::Char('h')) => self.lenghten_ctrl_l().await,
@@ -686,25 +639,6 @@ impl App {
         self.load_week().await;
     }
 
-    async fn assign_project(&mut self, num: usize) {
-        if let Some(selected) = self.week.selected_checkpoint_mut() {
-            let project_id = self.projects[num].id.clone();
-            if let Some(current_project_id) = &selected.project {
-                if current_project_id == &project_id {
-                    selected.project = None;
-                } else {
-                    selected.project = Some(project_id);
-                }
-            } else {
-                selected.project = Some(project_id);
-            }
-
-            if let Err(err) = update_checkpoint(&self.db, selected).await {
-                eprintln!("{}", err);
-            }
-        }
-    }
-
     fn render_input(&self, frame: &mut Frame, area: Rect) {
         // keep 2 for borders and 1 for cursor
         let width = area.width.max(3) - 3;
@@ -791,15 +725,13 @@ mod tests {
         let mut checkpoint = Checkpoint::new();
         checkpoint.message = Some("message".to_string());
 
-        let projects = vec![];
-
         // Test with a task ID that should generate a color
         checkpoint.project = Some("12345".to_string());
-        let color1 = checkpoint.color(&projects);
+        let color1 = checkpoint.color();
 
         // Test with another task ID
         checkpoint.project = Some("67890".to_string());
-        let color2 = checkpoint.color(&projects);
+        let color2 = checkpoint.color();
 
         // Colors should be different (highly likely, but collisions are possible, so maybe test multiple)
         // With only 2, collision is possible but unlikely if hash is good.
@@ -822,21 +754,9 @@ mod tests {
         assert_ne!(color1, Color::Red);
         assert_ne!(color2, Color::Red);
 
-        // Test with known project
-        let project = Project {
-            id: "proj1".to_string(),
-            name: "Project 1".to_string(),
-            color: 42,
-            tasks: vec![],
-        };
-        let projects_with_one = vec![project];
-        checkpoint.project = Some("proj1".to_string());
-        let color_known = checkpoint.color(&projects_with_one);
-        assert_eq!(color_known, Color::Indexed(42));
-
         // Test with no message -> Red
         checkpoint.message = None;
-        let color_no_msg = checkpoint.color(&projects_with_one);
+        let color_no_msg = checkpoint.color();
         assert_eq!(color_no_msg, Color::Red);
     }
 }

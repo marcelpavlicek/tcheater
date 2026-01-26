@@ -1,6 +1,5 @@
 use crate::{
     app::Checkpoint,
-    projects::Project,
     time::{human_duration, time_spans, UNIT},
 };
 use ratatui::{
@@ -14,7 +13,6 @@ const FIFTEEN_LEN: u16 = 4;
 
 pub struct Timeline<'a> {
     pub checkpoints: &'a Vec<Checkpoint>,
-    pub projects: &'a Vec<Project>,
     pub selected_checkpoint_idx: Option<usize>,
 }
 
@@ -57,7 +55,7 @@ impl<'a> Widget for Timeline<'a> {
             let mut title_top = Line::from(human_duration(span.units as u32 * UNIT)).centered();
             let mut title_bottom = Line::from(current_ch.time.format("%H:%M").to_string());
             let mut text = "─".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
-            let timeline_style = Style::new().fg(current_ch.color(self.projects));
+            let timeline_style = Style::new().fg(current_ch.color());
 
             if current_ch.project.is_none() {
                 if current_ch.message.as_deref().unwrap_or("").is_empty() {
@@ -113,11 +111,9 @@ mod tests {
                 ..Checkpoint::new()
             },
         ];
-        let projects = vec![];
 
         let widget = Timeline {
             checkpoints: &checkpoints,
-            projects: &projects,
             selected_checkpoint_idx: None,
         };
 
@@ -163,11 +159,9 @@ mod tests {
                 ..Checkpoint::new()
             },
         ];
-        let projects = vec![];
 
         let widget = Timeline {
             checkpoints: &checkpoints,
-            projects: &projects,
             selected_checkpoint_idx: None,
         };
 

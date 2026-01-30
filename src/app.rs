@@ -512,9 +512,7 @@ impl App {
 
     async fn delete_checkpoint(&mut self) {
         if let Some(selected) = self.week.selected_checkpoint() {
-            if let Err(err) =
-                delete_checkpoint(&self.db, self.week.next_checkpoint().unwrap_or(selected)).await
-            {
+            if let Err(err) = delete_checkpoint(&self.db, selected).await {
                 eprintln!("{}", err);
             }
             self.load_week().await;

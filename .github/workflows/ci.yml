@@ -76,6 +76,9 @@ jobs:
         if: runner.os == 'Windows'
       - run: vcpkg install libxml2:x64-windows
         if: runner.os == 'Windows'
+      - name: Add vcpkg bin to PATH
+        if: runner.os == 'Windows'
+        run: echo "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
       - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -85,5 +88,7 @@ jobs:
         run: cargo generate-lockfile
       - name: cargo test --locked
         run: cargo test --locked --all-features --all-targets
+        env:
+          VCPKGRS_DYNAMIC: 1
       - name: Cache Cargo dependencies
         uses: Swatinem/rust-cache@v2

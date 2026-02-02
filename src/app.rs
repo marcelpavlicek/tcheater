@@ -327,19 +327,27 @@ impl App {
                 .tasks
                 .iter()
                 .map(|t| {
+                    let time_str = match (&t.time_spent, &t.time_total) {
+                        (Some(s), Some(total)) => format!(" [{} / {}]", s, total),
+                        (Some(s), None) => format!(" [{}]", s),
+                        _ => String::new(),
+                    };
+
+                    let header = format!("{} - {}{}", t.id, t.name, time_str);
+
                     if self.show_task_url {
                         if let Some(prefix) = &self.task_url_prefix {
                             let url = format!("{}{}", prefix, t.id);
                             let lines = vec![
-                                Line::from(format!("{} - {}", t.id, t.name)),
+                                Line::from(header),
                                 Line::from(Span::from(url).fg(Color::Blue)),
                             ];
                             ListItem::new(lines)
                         } else {
-                            ListItem::new(format!("{} - {}", t.id, t.name))
+                            ListItem::new(header)
                         }
                     } else {
-                        ListItem::new(format!("{} - {}", t.id, t.name))
+                        ListItem::new(header)
                     }
                 })
                 .collect();

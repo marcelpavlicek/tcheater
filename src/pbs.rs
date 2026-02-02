@@ -12,6 +12,8 @@ pub struct AuthConfig {
 pub struct PbsTask {
     pub id: i32,
     pub name: String,
+    pub time_spent: Option<String>,
+    pub time_total: Option<String>,
 }
 
 use reqwest::{redirect::Policy, Client};
@@ -59,9 +61,39 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
         let task_list = result.get_nodes_as_vec();
         let mut parsed_tasks: Vec<PbsTask> = task_list
             .iter()
-            .map(|row| PbsTask {
-                id: row.get_attribute("data-id").unwrap().parse().unwrap(),
-                name: row.get_child_elements().get(5).unwrap().get_content(),
+            .map(|row| {
+                let children = row.get_child_elements();
+                let mut time_spent = None;
+                let mut time_total = None;
+
+                if let Some(time_td) = children.get(14) {
+                    for child in time_td.get_child_elements() {
+                        if child.get_name() == "span" {
+                            if let Some(class_attr) = child.get_attribute("class") {
+                                if class_attr.contains("hour") {
+                                    let content = child.get_content();
+                                    let parts: Vec<&str> = content.split('/').collect();
+                                    if parts.len() == 2 {
+                                        time_spent =
+                                            Some(parts[0].replace('\u{a0}', "").trim().to_string());
+                                        time_total =
+                                            Some(parts[1].replace('\u{a0}', "").trim().to_string());
+                                    } else if !parts.is_empty() {
+                                        time_spent =
+                                            Some(parts[0].replace('\u{a0}', "").trim().to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                PbsTask {
+                    id: row.get_attribute("data-id").unwrap().parse().unwrap(),
+                    name: children.get(5).unwrap().get_content(),
+                    time_spent,
+                    time_total,
+                }
             })
             .collect();
         parsed_tasks.sort_by(|a, b| b.id.cmp(&a.id));

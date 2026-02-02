@@ -66,24 +66,15 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
                 let mut time_spent = None;
                 let mut time_total = None;
 
-                if let Some(time_td) = children.get(14) {
-                    for child in time_td.get_child_elements() {
-                        if child.get_name() == "span" {
-                            if let Some(class_attr) = child.get_attribute("class") {
-                                if class_attr.contains("hour") {
-                                    let content = child.get_content();
-                                    let parts: Vec<&str> = content.split('/').collect();
-                                    if parts.len() == 2 {
-                                        time_spent =
-                                            Some(parts[0].replace('\u{a0}', "").trim().to_string());
-                                        time_total =
-                                            Some(parts[1].replace('\u{a0}', "").trim().to_string());
-                                    } else if !parts.is_empty() {
-                                        time_spent =
-                                            Some(parts[0].replace('\u{a0}', "").trim().to_string());
-                                    }
-                                }
-                            }
+                if let Ok(spans) = row.findnodes(".//span[contains(@class, 'hour')]") {
+                    if let Some(span) = spans.first() {
+                        let content = span.get_content();
+                        let parts: Vec<&str> = content.split('/').collect();
+                        if parts.len() == 2 {
+                            time_spent = Some(parts[0].replace('\u{a0}', "").trim().to_string());
+                            time_total = Some(parts[1].replace('\u{a0}', "").trim().to_string());
+                        } else if !parts.is_empty() {
+                            time_spent = Some(parts[0].replace('\u{a0}', "").trim().to_string());
                         }
                     }
                 }

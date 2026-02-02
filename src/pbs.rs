@@ -68,13 +68,13 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
 
                 if let Ok(spans) = row.findnodes(".//span[contains(@class, 'hour')]") {
                     if let Some(span) = spans.first() {
-                        let content = span.get_content();
+                        let content = span.get_content().replace('\u{a0}', "");
                         let parts: Vec<&str> = content.split('/').collect();
                         if parts.len() == 2 {
-                            time_spent = Some(parts[0].replace('\u{a0}', "").trim().to_string());
-                            time_total = Some(parts[1].replace('\u{a0}', "").trim().to_string());
+                            time_spent = Some(parts[0].trim().to_string());
+                            time_total = Some(parts[1].trim().to_string());
                         } else if !parts.is_empty() {
-                            time_spent = Some(parts[0].replace('\u{a0}', "").trim().to_string());
+                            time_spent = Some(parts[0].trim().to_string());
                         }
                     }
                 }

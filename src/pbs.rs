@@ -66,7 +66,7 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
                 let mut time_spent = None;
                 let mut time_total = None;
 
-                if let Ok(spans) = row.findnodes(".//span[contains(@class, 'hour')]") {
+                if let Ok(spans) = row.findnodes("//span[contains(@class, 'hour')]") {
                     if let Some(span) = spans.first() {
                         let content = span.get_content().replace('\u{a0}', "");
                         let parts: Vec<&str> = content.split('/').collect();

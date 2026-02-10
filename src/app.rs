@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     firestore::{delete_checkpoint, find_checkpoints, insert_checkpoint, update_checkpoint},
     pbs::{fetch_tasks, AuthConfig, PbsTask},
-    time::{human_duration, round_to_nearest_fifteen_minutes, Week},
+    time::{calculate_duration_minutes, human_duration, round_to_nearest_fifteen_minutes, Week},
     timeline_widget::Timeline,
     widgets::HelpLine,
 };
@@ -182,14 +182,6 @@ impl App {
         if unregistered_height > 0 {
             let unregistered_area = areas[area_index];
 
-            let total_minutes: u32 = self
-                .week
-                .unregistered_checkpoints
-                .iter()
-                .map(|(_, m)| m)
-                .sum();
-            let total_duration_str = human_duration(total_minutes);
-
             let lines: Vec<Line> = self
                 .week
                 .unregistered_checkpoints
@@ -204,10 +196,8 @@ impl App {
                     ])
                 })
                 .collect();
-            let paragraph = Paragraph::new(lines).block(
-                Block::bordered()
-                    .title(format!("Unregistered Checkpoints ({})", total_duration_str)),
-            );
+            let paragraph =
+                Paragraph::new(lines).block(Block::bordered().title("Unregistered Checkpoints"));
             frame.render_widget(paragraph, unregistered_area);
             area_index += 1;
         }
@@ -570,11 +560,7 @@ impl App {
                     let start_time = checkpoint.time;
                     let end_time = day_checkpoints[idx + 1].time;
 
-                    let rounded_start = round_to_nearest_fifteen_minutes(start_time);
-                    let rounded_end = round_to_nearest_fifteen_minutes(end_time);
-
-                    let duration = rounded_end.signed_duration_since(rounded_start);
-                    let minutes = duration.num_minutes().max(0) as u32;
+                    let minutes = calculate_duration_minutes(start_time, end_time);
 
                     unregistered.push((checkpoint.clone(), minutes));
                 }

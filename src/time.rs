@@ -301,6 +301,25 @@ pub fn count_fifteen_minute_intervals<Tz: TimeZone>(start: DateTime<Tz>, end: Da
     minutes / UNIT as i64
 }
 
+/// Calculates the duration between two DateTime objects in minutes.
+///
+/// The start and end times are rounded to the nearest 15 minutes before calculating the duration.
+///
+/// # Arguments
+///
+/// * `start` - The starting DateTime
+/// * `end` - The ending DateTime
+///
+/// # Returns
+///
+/// The duration in minutes. Returns 0 if the duration is negative.
+pub fn calculate_duration_minutes<Tz: TimeZone>(start: DateTime<Tz>, end: DateTime<Tz>) -> u32 {
+    let rounded_start = round_to_nearest_fifteen_minutes(start);
+    let rounded_end = round_to_nearest_fifteen_minutes(end);
+    let duration = rounded_end.signed_duration_since(rounded_start);
+    duration.num_minutes().max(0) as u32
+}
+
 /// Converts minutes to human readable string
 ///
 /// # Arguments
@@ -338,17 +357,11 @@ pub fn time_spans(checkpoints: &[Checkpoint]) -> Vec<TimeSpan> {
         let start_time = checkpoints[i].time;
         let end_time = checkpoints[i + 1].time;
 
-        // Round both times to the nearest 15 minutes
-        let rounded_start = round_to_nearest_fifteen_minutes(start_time);
-        let rounded_end = round_to_nearest_fifteen_minutes(end_time);
-
-        // Calculate the number of 15-minute intervals
-        let intervals = count_fifteen_minute_intervals(rounded_start, rounded_end);
+        let minutes = calculate_duration_minutes(start_time, end_time);
 
         // Create a TimeSpan with the calculated number of intervals
-        // Convert to u32 since we expect positive intervals between consecutive checkpoints
         let time_span = TimeSpan {
-            units: intervals.max(0) as u16,
+            units: (minutes / UNIT) as u16,
         };
 
         spans.push(time_span);

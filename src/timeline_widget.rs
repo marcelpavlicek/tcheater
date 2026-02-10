@@ -1,7 +1,4 @@
-use crate::{
-    app::Checkpoint,
-    time::{human_duration, time_spans, UNIT},
-};
+use crate::{app::Checkpoint, time::time_spans};
 use ratatui::{
     layout::{Constraint, Layout},
     style::{Color, Style, Stylize},
@@ -52,7 +49,7 @@ impl<'a> Widget for Timeline<'a> {
         for (i, span) in spans.iter().enumerate() {
             let current_ch = &self.checkpoints[i];
 
-            let mut title_top = Line::from(human_duration(span.units as u32 * UNIT)).centered();
+            let mut title_top = Line::from(span.human_time()).centered();
             let mut title_bottom = Line::from(current_ch.time.format("%H:%M").to_string());
             let mut text = "─".repeat(FIFTEEN_LEN.into()).repeat(span.units as usize);
             let timeline_style = Style::new().fg(current_ch.color());

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, TimeZone, Timelike, Weekday};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, TimeZone, Timelike, Weekday};
 
 use crate::app::Checkpoint;
 
@@ -7,6 +7,12 @@ pub const UNIT: u32 = 15;
 #[derive(Default)]
 pub struct TimeSpan {
     pub units: u16,
+}
+
+impl TimeSpan {
+    pub fn human_time(&self) -> String {
+        human_duration(self.units as u32 * UNIT)
+    }
 }
 
 pub struct Week {
@@ -348,10 +354,6 @@ pub fn time_spans(checkpoints: &[Checkpoint]) -> Vec<TimeSpan> {
         spans.push(time_span);
     }
     spans
-}
-
-pub fn current_date_minus_seven_days() -> DateTime<Local> {
-    Local::now() - Duration::days(7)
 }
 
 /// Returns all Mondays in the given month of the given year as NaiveDate objects.

@@ -21,7 +21,7 @@ pub struct Week {
     pub wed: Vec<Checkpoint>,
     pub thu: Vec<Checkpoint>,
     pub fri: Vec<Checkpoint>,
-    pub unregistered_checkpoints: Vec<Checkpoint>,
+    pub unregistered_checkpoints: Vec<(Checkpoint, u32)>,
     pub selected_weekday: Weekday,
     pub selected_checkpoint_idx: usize,
 }

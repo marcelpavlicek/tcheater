@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     firestore::{delete_checkpoint, find_checkpoints, insert_checkpoint, update_checkpoint},
     pbs::{fetch_tasks, AuthConfig, PbsTask},
-    time::{round_to_nearest_fifteen_minutes, Week},
+    time::{human_duration, round_to_nearest_fifteen_minutes, Week},
     timeline_widget::Timeline,
     widgets::HelpLine,
 };
@@ -181,21 +181,33 @@ impl App {
         let mut area_index = 0;
         if unregistered_height > 0 {
             let unregistered_area = areas[area_index];
+
+            let total_minutes: u32 = self
+                .week
+                .unregistered_checkpoints
+                .iter()
+                .map(|(_, m)| m)
+                .sum();
+            let total_duration_str = human_duration(total_minutes);
+
             let lines: Vec<Line> = self
                 .week
                 .unregistered_checkpoints
                 .iter()
-                .map(|ch| {
+                .map(|(ch, minutes)| {
                     Line::from(vec![
                         Span::from(ch.time.format("%d.%m %H:%M ").to_string()),
                         Span::from(ch.project.as_deref().unwrap_or("-").to_string()).bold(),
                         Span::from(" "),
+                        Span::from(format!("({}) ", human_duration(*minutes))).fg(Color::Yellow),
                         Span::from(ch.message.as_deref().unwrap_or("")),
                     ])
                 })
                 .collect();
-            let paragraph =
-                Paragraph::new(lines).block(Block::bordered().title("Unregistered Checkpoints"));
+            let paragraph = Paragraph::new(lines).block(
+                Block::bordered()
+                    .title(format!("Unregistered Checkpoints ({})", total_duration_str)),
+            );
             frame.render_widget(paragraph, unregistered_area);
             area_index += 1;
         }
@@ -545,7 +557,7 @@ impl App {
         let thu = self.load_checkpoints(first_mon + Days::new(3)).await;
         let fri = self.load_checkpoints(first_mon + Days::new(4)).await;
 
-        let mut unregistered = vec![];
+        let mut unregistered: Vec<(Checkpoint, u32)> = vec![];
 
         // Iterate through each day's checkpoints and collect unregistered ones, excluding the last checkpoint of each day
         for day_checkpoints in [&mon, &tue, &wed, &thu, &fri] {
@@ -555,7 +567,16 @@ impl App {
             let last_idx = day_checkpoints.len() - 1;
             for (idx, checkpoint) in day_checkpoints.iter().enumerate() {
                 if !checkpoint.registered && idx != last_idx {
-                    unregistered.push(checkpoint.clone());
+                    let start_time = checkpoint.time;
+                    let end_time = day_checkpoints[idx + 1].time;
+
+                    let rounded_start = round_to_nearest_fifteen_minutes(start_time);
+                    let rounded_end = round_to_nearest_fifteen_minutes(end_time);
+
+                    let duration = rounded_end.signed_duration_since(rounded_start);
+                    let minutes = duration.num_minutes().max(0) as u32;
+
+                    unregistered.push((checkpoint.clone(), minutes));
                 }
             }
         }

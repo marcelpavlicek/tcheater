@@ -51,7 +51,10 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
         .await?;
 
     let html = res.text().await?;
+    parse_tasks_from_html(&html)
+}
 
+pub fn parse_tasks_from_html(html: &str) -> Result<Vec<PbsTask>, Box<dyn std::error::Error>> {
     let parser = Parser::default_html();
     let doc = parser.parse_string(html)?;
     if let Ok(context) = Context::new(&doc) {
@@ -66,7 +69,7 @@ pub async fn fetch_tasks(config: &AuthConfig) -> Result<Vec<PbsTask>, Box<dyn st
                 let mut time_spent = None;
                 let mut time_total = None;
 
-                if let Ok(spans) = row.findnodes("//span[contains(@class, 'hour')]") {
+                if let Ok(spans) = row.findnodes(".//span[contains(@class, 'hour')]") {
                     if let Some(span) = spans.first() {
                         let content = span.get_content().replace('\u{a0}', "");
                         let parts: Vec<&str> = content.split('/').collect();
@@ -121,4 +124,57 @@ mod tests {
     fn test_rescale_zero_range() {
         assert_eq!(rescale(5.0, 10.0, 10.0, 0.0, 100.0), 0.0);
     }
+}
+
+#[test]
+fn test_task_time_parsing() {
+    let html = r#"
+<div class="TaskList">
+    <table cellspacing="0" id="mtt" class="tlist">
+    <tbody>
+            <tr id="taskrow119627" data-id="119627">
+    <td class="f">119627</td>
+    <td colspan="2">
+        <div>PragueBest</div>
+        <div><small>Content Builder 2.0</small></div>
+    </td>
+    <td class="min-width--longtext"><a id="lnk119627" href="main.php?pageid=110&amp;action=detail&amp;id=119627">Task 1</a></td>
+    <td class="min-width--longtext">Task 1 Name</td>
+    <td class="min-width--longtext">Task 1 Name</td>
+
+    <td style="padding:2px;">
+        <span class="hour ">0:00&nbsp;/&nbsp;1:00</span>
+    </td>
+</tr>
+
+            <tr id="taskrow119583" data-id="119583">
+    <td class="f">119583</td>
+    <td colspan="2">
+        <div>PragueBest</div>
+        <div><small>Content Builder 2.0</small></div>
+    </td>
+    <td class="min-width--longtext"><a id="lnk119583" href="main.php?pageid=110&amp;action=detail&amp;id=119583">Task 2</a></td>
+    <td class="min-width--longtext">Task 2 Name</td>
+    <td class="min-width--longtext">Task 2 Name</td>
+
+    <td style="padding:2px;">
+        <span class="hour ">7:30&nbsp;/&nbsp;8:00</span>
+    </td>
+</tr>
+        </tbody>
+    </table>
+</div>
+"#;
+
+    let parsed_tasks = parse_tasks_from_html(html).unwrap();
+
+    // Check the first task
+    assert_eq!(parsed_tasks[0].id, 119627);
+    assert_eq!(parsed_tasks[0].time_spent, Some("0:00".to_string()));
+    assert_eq!(parsed_tasks[0].time_total, Some("1:00".to_string()));
+
+    // Check the second task
+    assert_eq!(parsed_tasks[1].id, 119583);
+    assert_eq!(parsed_tasks[1].time_spent, Some("7:30".to_string()));
+    assert_eq!(parsed_tasks[1].time_total, Some("8:00".to_string()));
 }

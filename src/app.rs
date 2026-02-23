@@ -329,21 +329,30 @@ impl App {
                 .tasks
                 .iter()
                 .map(|t| {
-                    let time_str = match (&t.time_spent, &t.time_total) {
-                        (Some(s), Some(total)) => format!(" [{} / {}]", s, total),
-                        (Some(s), None) => format!(" [{}]", s),
-                        _ => String::new(),
-                    };
+                    let mut header_spans = vec![Span::from(format!("{} - {}", t.id, t.name))];
 
-                    let header = format!("{} - {}{}", t.id, t.name, time_str);
+                    match (&t.time_spent, &t.time_total) {
+                        (Some(s), Some(total)) => {
+                            header_spans.push(Span::from(" ["));
+                            header_spans.push(Span::from(s.to_string()).fg(Color::Green));
+                            header_spans.push(Span::from(" / "));
+                            header_spans.push(Span::from(total.to_string()).fg(Color::Blue));
+                            header_spans.push(Span::from("]"));
+                        }
+                        (Some(s), None) => {
+                            header_spans.push(Span::from(" ["));
+                            header_spans.push(Span::from(s.to_string()).fg(Color::Green));
+                            header_spans.push(Span::from("]"));
+                        }
+                        _ => {}
+                    }
+
+                    let header = Line::from(header_spans);
 
                     if self.show_task_url {
                         if let Some(prefix) = &self.task_url_prefix {
                             let url = format!("{}{}", prefix, t.id);
-                            let lines = vec![
-                                Line::from(header),
-                                Line::from(Span::from(url).fg(Color::Blue)),
-                            ];
+                            let lines = vec![header, Line::from(Span::from(url).fg(Color::Blue))];
                             ListItem::new(lines)
                         } else {
                             ListItem::new(header)

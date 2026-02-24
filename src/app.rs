@@ -65,7 +65,7 @@ impl Checkpoint {
 
     pub fn color(&self) -> Color {
         if self.message.is_none() {
-            return Color::Red;
+            return Color::DarkGray;
         }
 
         if let Some(project_id) = &self.project {
@@ -364,12 +364,8 @@ impl App {
                 .collect();
             let list = List::new(items)
                 .block(Block::bordered().title("Select Task"))
-                .highlight_style(
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(ratatui::style::Modifier::BOLD),
-                )
-                .highlight_symbol(">> ");
+                .highlight_style(Style::default().fg(Color::Yellow))
+                .highlight_symbol("▶ ");
 
             frame.render_stateful_widget(list, area, &mut self.task_popup_state);
         }

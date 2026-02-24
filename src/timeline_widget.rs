@@ -33,7 +33,7 @@ impl<'a> Widget for Timeline<'a> {
             .centered();
 
             if self.selected_checkpoint_idx.is_some() {
-                prelude_p = prelude_p.bg(Color::Gray).fg(Color::Black).bold();
+                prelude_p = prelude_p.bg(Color::DarkGray).fg(Color::Black).bold();
             }
         }
         prelude_p.render(pre_area, buf);

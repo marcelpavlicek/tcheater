@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 ratatui = "0.30.0"
 color-eyre = "0.6.3"
+firestore = "0.48.0"
 chrono = "0.4.44"
-firestore = "0.47.0"
 futures = "0.3.32"
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0.218", features = ["derive"] }

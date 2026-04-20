@@ -329,7 +329,32 @@ impl App {
                 .tasks
                 .iter()
                 .map(|t| {
-                    let mut header_spans = vec![Span::from(format!("{} - {}", t.id, t.name))];
+                    let mut header_spans = vec![];
+
+                    if let (Some(spent), Some(total)) = (&t.time_spent, &t.time_total) {
+                        let parse_time = |time_str: &str| -> Option<i32> {
+                            let parts: Vec<&str> = time_str.split(':').collect();
+                            if parts.len() == 2 {
+                                let hours: i32 = parts[0].parse().ok()?;
+                                let minutes: i32 = parts[1].parse().ok()?;
+                                Some(hours * 60 + minutes)
+                            } else {
+                                None
+                            }
+                        };
+
+                        if let (Some(spent_mins), Some(total_mins)) = (parse_time(spent), parse_time(total)) {
+                            let left_mins = total_mins - spent_mins;
+                            let sign = if left_mins < 0 { "-" } else { "" };
+                            let abs_minutes = left_mins.abs();
+                            let h = abs_minutes / 60;
+                            let m = abs_minutes % 60;
+                            let color = if left_mins < 0 { Color::Red } else { Color::Green };
+                            header_spans.push(Span::from(format!("[{}{}:{:02}] ", sign, h, m)).fg(color));
+                        }
+                    }
+
+                    header_spans.push(Span::from(format!("{} - {}", t.id, t.name)));
 
                     match (&t.time_spent, &t.time_total) {
                         (Some(s), Some(total)) => {

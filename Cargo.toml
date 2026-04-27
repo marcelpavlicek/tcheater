@@ -16,6 +16,6 @@ serde = { version = "1.0.218", features = ["derive"] }
 toml = "1.0.6"
 tui-input = "0.15.0"
 directories = "6.0.0"
-rustls = "0.23.37"
+rustls = "0.23.39"
 reqwest = { version = "0.13", features = ["cookies", "form"] }
 libxml = "0.3.8"
